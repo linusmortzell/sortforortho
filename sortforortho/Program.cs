@@ -1,5 +1,4 @@
-﻿using System.Configuration;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +11,9 @@ namespace sortforortho
     {
         static void Main(string[] args)
         {
-            string path = ConfigurationManager.AppSettings.Get("path");
-            Console.WriteLine(path);
-            Console.Read();
+            Views.SortForOrthoView view = new Views.SortForOrthoView();
+            Controllers.SortForOrthoController controller = new Controllers.SortForOrthoController(view);
+            controller.StartApp();
         }
     }
 }
