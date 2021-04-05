@@ -1,4 +1,6 @@
-﻿using System;
+﻿using System.Configuration;
+using System.Collections.Specialized;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +12,9 @@ namespace sortforortho
     {
         static void Main(string[] args)
         {
+            string path = ConfigurationManager.AppSettings.Get("path");
+            Console.WriteLine(path);
+            Console.Read();
         }
     }
 }
