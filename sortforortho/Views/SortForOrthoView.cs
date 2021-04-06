@@ -8,13 +8,12 @@ namespace sortforortho.Views
 {
     class SortForOrthoView
     {
-        public void ShowResult(string[] images)
+        public void ShowResult(string[] filePaths)
         {
             int count = 0;
-            for (int i = 0; i < images.Length; i++)
+            foreach (string filePath in filePaths)
             {
-                string s = images[i];
-                Console.WriteLine(s);
+                Console.WriteLine(filePath);
                 count++;
             }
 

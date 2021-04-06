@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MetadataExtractor;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,12 @@ namespace sortforortho.Models
     class Image
     {
         private string _path;
-        private string _latlngCenter;
+        private GeoLocation _geoLocation;
+        private short _altitude;
+        private short _sensorWidth;
+        private short _focalLength;
+        private int _imageWidth;
+        private DateTime _photoTaken;
         private string[] _polygonCoordinates;
         public string Path
         {
@@ -22,15 +28,76 @@ namespace sortforortho.Models
             }
         }
 
-        public string LatlngCenter
+        public GeoLocation GeoLocation
         {
             get
             {
-                return _latlngCenter;
+                return _geoLocation;
             }
             set
             {
-                _latlngCenter = value;
+                _geoLocation = value;
+            }
+        }
+
+        public short Altitude
+        {
+            get
+            {
+                return _altitude;
+            }
+            set
+            {
+                _altitude = value;
+            }
+        }
+
+        public short SensorWidth
+        {
+            get
+            {
+                return _sensorWidth;
+            }
+            set
+            {
+                _sensorWidth = value;
+            }
+        }
+
+
+        public short FocalLength
+        {
+            get
+            {
+                return _focalLength;
+            }
+            set
+            {
+                _focalLength = value;
+            }
+        }
+
+        public int ImageWidth
+        {
+            get
+            {
+                return _imageWidth;
+            }
+            set
+            {
+                _imageWidth = value;
+            }
+        }
+
+        public DateTime PhotoTaken
+        {
+            get
+            {
+                return _photoTaken;
+            }
+            set
+            {
+                _photoTaken = value;
             }
         }
 
@@ -47,10 +114,15 @@ namespace sortforortho.Models
             }
         }
 
-        public Image(string path, string latlngCenter, string[] polygonCoordinates)
+
+        public Image(string path, GeoLocation geoLocation, short altitude, short sensorWidth, short focalLength, int imageWidth, string[] polygonCoordinates)
         {
             this._path = path;
-            this._latlngCenter = latlngCenter;
+            this._geoLocation = geoLocation;
+            this._altitude = altitude;
+            this._sensorWidth = sensorWidth;
+            this._focalLength = focalLength;
+            this._imageWidth = imageWidth;
             this._polygonCoordinates = polygonCoordinates;
         }
     }
