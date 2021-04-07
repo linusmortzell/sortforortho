@@ -15,6 +15,7 @@ namespace sortforortho.Models
         private short _sensorWidth;
         private short _focalLength;
         private int _imageWidth;
+        private int _imageHeight;
         private string _photoTaken;
         private string[] _polygonCoordinates;
         public string Path
@@ -89,6 +90,18 @@ namespace sortforortho.Models
             }
         }
 
+        public int ImageHeight
+        {
+            get
+            {
+                return _imageHeight;
+            }
+            set
+            {
+                _imageHeight = value;
+            }
+        }
+
         public string PhotoTaken
         {
             get
@@ -123,8 +136,20 @@ namespace sortforortho.Models
             this._sensorWidth = sensorWidth;
             this._focalLength = focalLength;
             this._imageWidth = imageWidth;
+            this._imageHeight = ImageHeight;
             this._photoTaken = photoTaken;
             this._polygonCoordinates = polygonCoordinates;
         }
+
+        public List<GeoLocation> GetPolygonCoordinates(GeoLocation latlng, int flightYaw)
+        {
+            List<GeoLocation> list = new List<GeoLocation>();
+
+
+
+
+            return list; 
+        }
+
     }
 }

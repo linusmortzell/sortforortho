@@ -1,5 +1,6 @@
 ﻿using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
+using MetadataExtractor.Formats.Xmp;
 using sortforortho.Models;
 using sortforortho.Views;
 using System;
@@ -27,6 +28,7 @@ namespace sortforortho.Controllers
         public void StartApp()
         {
             string path;
+            string sensorWidth;
             bool searchRecursive;
             string[] filters;
             string[] filePaths;
@@ -34,6 +36,9 @@ namespace sortforortho.Controllers
             try
             {
                 path = ConfigurationManager.AppSettings.Get("pathToFiles");
+
+                // Should be replaced with data from database
+                sensorWidth = ConfigurationManager.AppSettings.Get("sensorWidth");
                 searchRecursive = bool.Parse(ConfigurationManager.AppSettings.Get("searchRecursive"));
                 string filtersString = ConfigurationManager.AppSettings.Get("filter");
                 filters = filtersString.Split(',');
@@ -41,24 +46,60 @@ namespace sortforortho.Controllers
                 _view.ShowResult(filePaths);
                 Console.Read();
 
-                /*
-                 * Metadata
-                 */
+                // Get metadata directories
                 IEnumerable<MetadataExtractor.Directory> directories = ImageMetadataReader.ReadMetadata(filePaths[0]);
 
                 // Get info from gps-directory
                 GpsDirectory gpsDirectory = directories.OfType<GpsDirectory>().FirstOrDefault();
                 GeoLocation geo = gpsDirectory.GetGeoLocation();
-                string altitude = gpsDirectory.GetDescription(GpsDirectory.TagAltitude);
-
 
                 // Get info from exif-directory
                 ExifSubIfdDirectory subIfdDirectory = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
-                string dateTime = subIfdDirectory?.GetDescription(ExifDirectoryBase.TagDateTimeOriginal);
-                int imageWidth = int.Parse(Regex.Match(subIfdDirectory?.GetDescription(ExifDirectoryBase.TagExifImageWidth), @"\d+").Value, NumberFormatInfo.InvariantInfo);
+                string dtStr = subIfdDirectory?.GetDescription(ExifDirectoryBase.TagDateTimeOriginal);
+                string photoTaken = dtStr.Remove(4, 1).Insert(4, "-").Remove(7, 1).Insert(7, "-");
+
+                // Get ImageSize
+                int imageWidth;
+                if (Int32.TryParse(Regex.Match(subIfdDirectory?.GetDescription(ExifDirectoryBase.TagExifImageWidth), @"\d+").Value, out imageWidth))
+                {
+                    Console.WriteLine("OK");
+                } else
+                {
+                    Console.WriteLine("Bilden kastas bort eftersom den inte har tillräcklig metadata");
+                }
+                int imageHeight;
+                if (Int32.TryParse(Regex.Match(subIfdDirectory?.GetDescription(ExifDirectoryBase.TagExifImageHeight), @"\d+").Value, out imageHeight))
+                {
+                    Console.WriteLine("OK");
+                }
+                else
+                {
+                    Console.WriteLine("Bilden kastas bort eftersom den inte har tillräcklig metadata");
+                }
+
                 string focalLength = Regex.Match(subIfdDirectory?.GetDescription(ExifDirectoryBase.TagFocalLength), @"\d+,\d").Value;
 
-                Console.WriteLine(focalLength);
+                // Get info from xmp-directory
+                XmpDirectory xmpDirectory = directories.OfType<XmpDirectory>().FirstOrDefault();
+                string altitude = null;
+                string flightYawDegree = null;
+
+
+                foreach (var property in xmpDirectory.XmpMeta.Properties)
+                {
+                    // Console.WriteLine($"Path={property.Path} Value={property.Value}");
+                    if (String.Equals(property.Path, "drone-dji:RelativeAltitude"))  
+                    {
+                        altitude = property.Value;   
+                    }
+
+                    if (String.Equals(property.Path, "drone-dji:FlightYawDegree"))
+                    {
+                        flightYawDegree = property.Value;
+                    }
+                }
+
+                Console.WriteLine("Path: " + filePaths[0] + "\nLocation: " + geo + "\nAltitude: " + altitude + "\nSensor width: " + sensorWidth + "\nFocal Length: " + focalLength + "\nImage width: " + imageWidth + "\nImage height: " + imageHeight + "\nPhoto taken: " + photoTaken + "\nFlight Yaw Degree: " + flightYawDegree);
                 Console.Read();
             }
             catch
@@ -77,7 +118,5 @@ namespace sortforortho.Controllers
             }
             return filesFound.ToArray();
         }
-
-
     }
 }
