@@ -46,6 +46,12 @@ namespace sortforortho.Controllers
                  */
                 IEnumerable<MetadataExtractor.Directory> directories = ImageMetadataReader.ReadMetadata(filePaths[0]);
 
+                // Get info from gps-directory
+                GpsDirectory gpsDirectory = directories.OfType<GpsDirectory>().FirstOrDefault();
+                GeoLocation geo = gpsDirectory.GetGeoLocation();
+                string altitude = gpsDirectory.GetDescription(GpsDirectory.TagAltitude);
+
+
                 // Get info from exif-directory
                 ExifSubIfdDirectory subIfdDirectory = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
                 string dateTime = subIfdDirectory?.GetDescription(ExifDirectoryBase.TagDateTimeOriginal);
@@ -53,10 +59,6 @@ namespace sortforortho.Controllers
                 string focalLength = Regex.Match(subIfdDirectory?.GetDescription(ExifDirectoryBase.TagFocalLength), @"\d+,\d").Value;
 
                 Console.WriteLine(focalLength);
-                // Get info from gps-directory
-                GpsDirectory gpsDirectory = directories.OfType<GpsDirectory>().FirstOrDefault();
-                GeoLocation geo = gpsDirectory.GetGeoLocation();
-                Console.WriteLine(geo);
                 Console.Read();
             }
             catch

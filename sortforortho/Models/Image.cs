@@ -15,7 +15,7 @@ namespace sortforortho.Models
         private short _sensorWidth;
         private short _focalLength;
         private int _imageWidth;
-        private DateTime _photoTaken;
+        private string _photoTaken;
         private string[] _polygonCoordinates;
         public string Path
         {
@@ -89,7 +89,7 @@ namespace sortforortho.Models
             }
         }
 
-        public DateTime PhotoTaken
+        public string PhotoTaken
         {
             get
             {
@@ -115,7 +115,7 @@ namespace sortforortho.Models
         }
 
 
-        public Image(string path, GeoLocation geoLocation, short altitude, short sensorWidth, short focalLength, int imageWidth, string[] polygonCoordinates)
+        public Image(string path, GeoLocation geoLocation, short altitude, short sensorWidth, short focalLength, int imageWidth, string photoTaken, string[] polygonCoordinates)
         {
             this._path = path;
             this._geoLocation = geoLocation;
@@ -123,6 +123,7 @@ namespace sortforortho.Models
             this._sensorWidth = sensorWidth;
             this._focalLength = focalLength;
             this._imageWidth = imageWidth;
+            this._photoTaken = photoTaken;
             this._polygonCoordinates = polygonCoordinates;
         }
     }
