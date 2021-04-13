@@ -23,8 +23,13 @@ namespace sortforortho.Views
 
         public void ConfigError()
         {
-            Console.WriteLine("Konfigurationen är knas, programmet kan ej fortsätta!");
+            Console.WriteLine("Error occurred, check configuration!");
             Console.Read();
+        }
+
+        public void ParsingError(string error)
+        {
+            Console.WriteLine("Error parsing " + error + ".");
         }
     }
 }

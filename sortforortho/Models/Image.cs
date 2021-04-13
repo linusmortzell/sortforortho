@@ -10,14 +10,15 @@ namespace sortforortho.Models
     class Image
     {
         private string _path;
-        private GeoLocation _geoLocation;
-        private short _altitude;
-        private short _sensorWidth;
-        private short _focalLength;
+        private GeoLocation _centerPoint;
+        private float _altitude;
+        private float _sensorWidth;
+        private float _focalLength;
+        private float _flightYawDegree;
         private int _imageWidth;
         private int _imageHeight;
         private string _photoTaken;
-        private string[] _polygonCoordinates;
+        private List<GeoLocation> _cornerCoordinates;
         public string Path
         {
             get {
@@ -29,19 +30,19 @@ namespace sortforortho.Models
             }
         }
 
-        public GeoLocation GeoLocation
+        public GeoLocation CenterPoint
         {
             get
             {
-                return _geoLocation;
+                return _centerPoint;
             }
             set
             {
-                _geoLocation = value;
+                _centerPoint = value;
             }
         }
 
-        public short Altitude
+        public float Altitude
         {
             get
             {
@@ -53,7 +54,7 @@ namespace sortforortho.Models
             }
         }
 
-        public short SensorWidth
+        public float SensorWidth
         {
             get
             {
@@ -66,7 +67,7 @@ namespace sortforortho.Models
         }
 
 
-        public short FocalLength
+        public float FocalLength
         {
             get
             {
@@ -75,6 +76,18 @@ namespace sortforortho.Models
             set
             {
                 _focalLength = value;
+            }
+        }
+
+        public float FlightYawDegree
+        {
+            get
+            {
+                return _flightYawDegree;
+            }
+            set
+            {
+                _flightYawDegree = value;
             }
         }
 
@@ -114,42 +127,122 @@ namespace sortforortho.Models
             }
         }
 
-        public string[] PolygonCoordinates
+        public List<GeoLocation> CornerCoordinates
         {
             get
             {
-                return _polygonCoordinates;
+                return _cornerCoordinates;
             }
 
             set
             {
-                _polygonCoordinates = value;
+                _cornerCoordinates = value;
             }
         }
 
 
-        public Image(string path, GeoLocation geoLocation, short altitude, short sensorWidth, short focalLength, int imageWidth, string photoTaken, string[] polygonCoordinates)
+        public Image(string path, GeoLocation centerPoint, float altitude, float sensorWidth, float focalLength, int imageWidth, string photoTaken, List<GeoLocation> cornerCoordinates)
         {
             this._path = path;
-            this._geoLocation = geoLocation;
+            this._centerPoint = centerPoint;
             this._altitude = altitude;
             this._sensorWidth = sensorWidth;
             this._focalLength = focalLength;
             this._imageWidth = imageWidth;
             this._imageHeight = ImageHeight;
             this._photoTaken = photoTaken;
-            this._polygonCoordinates = polygonCoordinates;
+            this._cornerCoordinates = cornerCoordinates;
         }
 
-        public List<GeoLocation> GetPolygonCoordinates(GeoLocation latlng, int flightYaw)
+        public Image() { }
+
+        public GeoLocation GetLatLong(double latitude, double longitude, double distanceInMetres, double bearing)
+        {
+            double brngRad = DegreesToRadians(bearing);
+            double latRad = DegreesToRadians(latitude);
+            double lonRad = DegreesToRadians(longitude);
+            int earthRadiusInMetres = 6371000;
+            double distFrac = distanceInMetres / earthRadiusInMetres;
+
+            double latitudeResult = RadiansToDegrees(Math.Asin(Math.Sin(latRad) * Math.Cos(distFrac) + Math.Cos(latRad) * Math.Sin(distFrac) * Math.Cos(brngRad)));
+            double a = Math.Atan2(Math.Sin(brngRad) * Math.Sin(distFrac) * Math.Cos(latRad), Math.Cos(distFrac) - Math.Sin(latRad) * Math.Sin(latitudeResult));
+            double longitudeResult = RadiansToDegrees((lonRad + a + 3 * Math.PI) % (2 * Math.PI) - Math.PI);
+
+            return new GeoLocation(latitudeResult, longitudeResult);
+        }
+
+        public double GetAngleB(int imageWidth, int imageHeight)
+        {
+            return 180 - 90 - (Math.Atan(Convert.ToDouble(imageHeight) / Convert.ToDouble(imageWidth)) * 180 / Math.PI);
+        }
+
+        public float GetGsd(float sensorWidth, float altitude, float focalLength, int imageWidth)
+        {
+            return (float)(sensorWidth * altitude) / (focalLength * imageWidth);
+        }
+
+        public double GetDistanceToCornersInMeters(int imageHeight, int imageWidth, float gsd)
+        {
+            return Math.Sqrt(Math.Pow(Convert.ToDouble(imageHeight / 2), 2) + Math.Pow(Convert.ToDouble(imageWidth / 2), 2)) * gsd;
+        }
+
+        public double GetUpperLeftBearing(double bAngle, float flightYawAngle)
+        {
+            double angle = 0 - bAngle + flightYawAngle;
+            if (angle >= 360)
+            {
+                return angle - 360;
+            }
+            else return angle;
+        }
+        public double GetUpperRightBearing(double bAngle, float flightYawAngle)
+        {
+            double angle = 0 + bAngle + flightYawAngle;
+            if (angle >= 360)
+            {
+                return angle - 360;
+            }
+            else return angle;
+        }
+
+        public double GetLowerLeftBearing(double bAngle, float flightYawAngle)
+        {
+            double angle = 180 + bAngle + flightYawAngle;
+            if (angle >= 360)
+            {
+                return angle - 360;
+            }
+            else return angle;
+        }
+
+        public double GetLowerRightBearing(double bAngle, float flightYawAngle)
+        {
+            double angle = 180 - bAngle + flightYawAngle;
+            if (angle >= 360)
+            {
+                return angle - 360;
+            }
+            else return angle;
+        }
+
+        public double DegreesToRadians(double angle)
+        {
+            return (Math.PI / 180) * angle;
+        }
+
+        public double RadiansToDegrees(double radians)
+        {
+            return (180 / Math.PI) * radians;
+        }
+
+        public List<GeoLocation> GetListOfCoordinates(GeoLocation point1, int imageHeight, int imageWidth, float sensorWidth, float altitude, float focal, float flightYawAngle)
         {
             List<GeoLocation> list = new List<GeoLocation>();
-
-
-
-
-            return list; 
+            list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetUpperLeftBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));
+            list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetUpperRightBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));
+            list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetLowerRightBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));
+            list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetLowerLeftBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));
+            return list;
         }
-
     }
 }
