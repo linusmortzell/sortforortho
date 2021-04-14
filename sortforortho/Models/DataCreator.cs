@@ -34,10 +34,10 @@ namespace sortforortho.Models
 
 
             // Set spatial reference
-            var srs = new SpatialReference(null);
-            srs.SetWellKnownGeogCS("EPSG:3857");
+            //var srs = new SpatialReference(null);
+            //srs.SetWellKnownGeogCS("EPSG:3857");
 
-            // SpatialReference srs = new SpatialReference(Osr.SRS_WKT_WGS84);
+            SpatialReference srs = new SpatialReference(Osr.SRS_WKT_WGS84);
 
 
             /* -------------------------------------------------------------------- */
@@ -69,7 +69,7 @@ namespace sortforortho.Models
                 }
             }
 
-            layer = ds.CreateLayer(layerName, null, wkbGeometryType.wkbPolygon, new string[] { });
+            layer = ds.CreateLayer(layerName, srs, wkbGeometryType.wkbPolygon, new string[] { });
             if (layer == null)
             {
                 Console.WriteLine("Layer creation failed.");
@@ -117,7 +117,7 @@ namespace sortforortho.Models
                 string point4lat = img.CornerCoordinates[3].Latitude.ToString().Replace(",", ".");
                 string point4lon = img.CornerCoordinates[3].Longitude.ToString().Replace(",", ".");
 
-                string wkt = "POLYGON(( " + point1lat + " " + point1lon + ", " + point2lat + " " + point2lon + ", " + point3lat + " " + point3lon + ", " + point4lat + " " + point4lon + " " + point1lat + " " + point1lon + " ))";
+                string wkt = "POLYGON(( " + point1lon + " " + point1lat + ", " + point2lon + " " + point2lat + ", " + point3lon + " " + point3lat + ", " + point4lon + " " + point4lat + " " + point1lon + " " + point1lat + " ))";
                 Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, srs);
 
                 if (feature.SetGeometry(geom) != 0)

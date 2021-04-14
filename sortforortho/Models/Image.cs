@@ -158,6 +158,7 @@ namespace sortforortho.Models
 
         public GeoLocation GetLatLong(double latitude, double longitude, double distanceInMetres, double bearing)
         {
+            Console.WriteLine(bearing);
             double brngRad = DegreesToRadians(bearing);
             double latRad = DegreesToRadians(latitude);
             double lonRad = DegreesToRadians(longitude);
@@ -186,7 +187,7 @@ namespace sortforortho.Models
             return Math.Sqrt(Math.Pow(Convert.ToDouble(imageHeight / 2), 2) + Math.Pow(Convert.ToDouble(imageWidth / 2), 2)) * gsd;
         }
 
-        public double GetUpperLeftBearing(double bAngle, float flightYawAngle)
+        public double GetUpperLeftBearing(double bAngle, float flightYawAngle, float gimbalYawAngle)
         {
             double angle = 0 - bAngle + flightYawAngle;
             if (angle >= 360)
@@ -195,9 +196,9 @@ namespace sortforortho.Models
             }
             else return angle;
         }
-        public double GetUpperRightBearing(double bAngle, float flightYawAngle)
+        public double GetUpperRightBearing(double bAngle, float flightYawAngle, float gimbalYawAngle)
         {
-            double angle = 0 + bAngle + flightYawAngle;
+            double angle = 0 + bAngle + flightYawAngle + gimbalYawAngle;
             if (angle >= 360)
             {
                 return angle - 360;
@@ -205,9 +206,9 @@ namespace sortforortho.Models
             else return angle;
         }
 
-        public double GetLowerLeftBearing(double bAngle, float flightYawAngle)
+        public double GetLowerLeftBearing(double bAngle, float flightYawAngle, float gimbalYawAngle)
         {
-            double angle = 180 + bAngle + flightYawAngle;
+            double angle = 180 + bAngle + flightYawAngle + gimbalYawAngle;
             if (angle >= 360)
             {
                 return angle - 360;
@@ -215,9 +216,9 @@ namespace sortforortho.Models
             else return angle;
         }
 
-        public double GetLowerRightBearing(double bAngle, float flightYawAngle)
+        public double GetLowerRightBearing(double bAngle, float flightYawAngle, float gimbalYawAngle)
         {
-            double angle = 180 - bAngle + flightYawAngle;
+            double angle = 180 - bAngle + flightYawAngle + gimbalYawAngle;
             if (angle >= 360)
             {
                 return angle - 360;
@@ -235,13 +236,16 @@ namespace sortforortho.Models
             return (180 / Math.PI) * radians;
         }
 
-        public List<GeoLocation> GetCoordinateList(GeoLocation point1, int imageHeight, int imageWidth, float sensorWidth, float altitude, float focal, float flightYawAngle)
+        public List<GeoLocation> GetCoordinateList(GeoLocation point1, int imageHeight, int imageWidth, float sensorWidth, float altitude, float focal, float flightYawAngle, float gimbalYawAngle)
         {
+            double angleB = GetAngleB(imageWidth, imageHeight);
+            float gsd = GetGsd(sensorWidth, altitude, focal, imageWidth);
+            double distance = GetDistanceToCornersInMeters(imageHeight, imageWidth, gsd);
             List<GeoLocation> list = new List<GeoLocation>();
-            list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetUpperLeftBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));
-            list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetUpperRightBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));
-            list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetLowerRightBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));
-            list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetLowerLeftBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));
+            list.Add(GetLatLong(point1.Latitude, point1.Longitude, distance, GetUpperLeftBearing(angleB, flightYawAngle, gimbalYawAngle)));
+            list.Add(GetLatLong(point1.Latitude, point1.Longitude, distance, GetUpperRightBearing(angleB, flightYawAngle, gimbalYawAngle)));
+            list.Add(GetLatLong(point1.Latitude, point1.Longitude, distance, GetLowerRightBearing(angleB, flightYawAngle, gimbalYawAngle)));
+            list.Add(GetLatLong(point1.Latitude, point1.Longitude, distance, GetLowerLeftBearing(angleB, flightYawAngle, gimbalYawAngle)));
             return list;
         }
     }

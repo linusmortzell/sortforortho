@@ -117,6 +117,7 @@ namespace sortforortho.Controllers
 
             // Get altitude and flight yaw angle
             float flightYawDegree = 0.0f;
+            float gimbalYawDegree = 0.0f;
             float altitude = 0.0f;
             foreach (var property in xmpDirectory.XmpMeta.Properties)
             {
@@ -135,6 +136,14 @@ namespace sortforortho.Controllers
                         _view.ParsingError("flight yaw degree");
                     }
                 }
+
+                if (String.Equals(property.Path, "drone-dji:GimbalYawDegree"))
+                {
+                    if (!float.TryParse(property.Value.Replace("+", ""), NumberStyles.Any, CultureInfo.InvariantCulture, out gimbalYawDegree))
+                    {
+                        _view.ParsingError("gimbal yaw degree");
+                    }
+                }
             }
 
             img.Path = filePath;
@@ -145,7 +154,7 @@ namespace sortforortho.Controllers
             img.ImageHeight = imageHeight;
             img.ImageWidth = imageWidth;
             img.PhotoTaken = photoTaken;
-            img.CornerCoordinates = img.GetCoordinateList(centerPoint, imageHeight, imageWidth, sensorWidth, altitude, focalLength, flightYawDegree);
+            img.CornerCoordinates = img.GetCoordinateList(centerPoint, imageHeight, imageWidth, sensorWidth, altitude, focalLength, flightYawDegree, gimbalYawDegree);
             
             return img;
         }
