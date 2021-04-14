@@ -34,10 +34,10 @@ namespace sortforortho.Models
 
 
             // Set spatial reference
-            //var spatialReference = new SpatialReference(null);
-            //spatialReference.SetWellKnownGeogCS("wgs84");
+            var srs = new SpatialReference(null);
+            srs.SetWellKnownGeogCS("EPSG:3857");
 
-            SpatialReference srs = new SpatialReference(Osr.SRS_WKT_WGS84);
+            // SpatialReference srs = new SpatialReference(Osr.SRS_WKT_WGS84);
 
 
             /* -------------------------------------------------------------------- */
@@ -69,7 +69,7 @@ namespace sortforortho.Models
                 }
             }
 
-            layer = ds.CreateLayer(layerName, null, wkbGeometryType.wkbPoint, new string[] { });
+            layer = ds.CreateLayer(layerName, null, wkbGeometryType.wkbPolygon, new string[] { });
             if (layer == null)
             {
                 Console.WriteLine("Layer creation failed.");
@@ -90,17 +90,10 @@ namespace sortforortho.Models
                 System.Environment.Exit(-1);
             }
 
-            fdefn = new FieldDefn("Latitude", FieldType.OFTInteger);
+            fdefn = new FieldDefn("Date", FieldType.OFTString);
             if (layer.CreateField(fdefn, 1) != 0)
             {
-                Console.WriteLine("Creating Latitude field failed.");
-                System.Environment.Exit(-1);
-            }
-
-            fdefn = new FieldDefn("Longitude", FieldType.OFTReal);
-            if (layer.CreateField(fdefn, 1) != 0)
-            {
-                Console.WriteLine("Creating Longitude field failed.");
+                Console.WriteLine("Creating Date field failed.");
                 System.Environment.Exit(-1);
             }
 
@@ -109,29 +102,43 @@ namespace sortforortho.Models
             /*      Adding features                                                 */
             /* -------------------------------------------------------------------- */
 
+            foreach (Image img in imageList)
+            {
+                Feature feature = new Feature(layer.GetLayerDefn());            
+                feature.SetField("Name", img.Path);
+                feature.SetField("Date", img.PhotoTaken);
+
+                string point1lat = img.CornerCoordinates[0].Latitude.ToString().Replace(",", ".");
+                string point1lon = img.CornerCoordinates[0].Longitude.ToString().Replace(",", ".");
+                string point2lat = img.CornerCoordinates[1].Latitude.ToString().Replace(",", ".");
+                string point2lon = img.CornerCoordinates[1].Longitude.ToString().Replace(",", ".");
+                string point3lat = img.CornerCoordinates[2].Latitude.ToString().Replace(",", ".");
+                string point3lon = img.CornerCoordinates[2].Longitude.ToString().Replace(",", ".");
+                string point4lat = img.CornerCoordinates[3].Latitude.ToString().Replace(",", ".");
+                string point4lon = img.CornerCoordinates[3].Longitude.ToString().Replace(",", ".");
+
+                string wkt = "POLYGON(( " + point1lat + " " + point1lon + ", " + point2lat + " " + point2lon + ", " + point3lat + " " + point3lon + ", " + point4lat + " " + point4lon + " " + point1lat + " " + point1lon + " ))";
+                Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, srs);
+
+                if (feature.SetGeometry(geom) != 0)
+                {
+                    Console.WriteLine("Failed add geometry to the feature");
+                    System.Environment.Exit(-1);
+                }
+
+                if (layer.CreateFeature(feature) != 0)
+                {
+                    Console.WriteLine("Failed to create feature in shapefile");
+                    System.Environment.Exit(-1);
+                }
+            }
             string latitude = imageList[9].CornerCoordinates[0].Latitude.ToString().Replace(",", ".");
             string longitude = imageList[9].CornerCoordinates[0].Longitude.ToString().Replace(",", ".");
             Console.WriteLine(latitude);
-            Feature feature = new Feature(layer.GetLayerDefn());
+            
 
-            feature.SetField("Name", imageList[9].Path);
-            feature.SetField("Latitude", latitude);
-            feature.SetField("Longitude", longitude);
+
             Console.ReadLine();
-
-            Geometry geom = Geometry.CreateFromWkt("POINT( " + latitude + " " + longitude + " )");
-
-            if (feature.SetGeometry(geom) != 0)
-            {
-                Console.WriteLine("Failed add geometry to the feature");
-                System.Environment.Exit(-1);
-            }
-
-            if (layer.CreateFeature(feature) != 0)
-            {
-                Console.WriteLine("Failed to create feature in shapefile");
-                System.Environment.Exit(-1);
-            }
 
             //string temp = "POLYGON (10 54, 30 50, 44 65)";
             //Geometry geom = Ogr.CreateGeometryFromWkt(ref wkbGeometryType.wkbPolygon, srs);
