@@ -111,13 +111,12 @@ namespace sortforortho.Models
 
             string latitude = imageList[9].CornerCoordinates[0].Latitude.ToString().Replace(",", ".");
             string longitude = imageList[9].CornerCoordinates[0].Longitude.ToString().Replace(",", ".");
-
+            Console.WriteLine(latitude);
             Feature feature = new Feature(layer.GetLayerDefn());
 
             feature.SetField("Name", imageList[9].Path);
             feature.SetField("Latitude", latitude);
             feature.SetField("Longitude", longitude);
-            Console.WriteLine(latitude);
             Console.ReadLine();
 
             Geometry geom = Geometry.CreateFromWkt("POINT( " + latitude + " " + longitude + " )");
