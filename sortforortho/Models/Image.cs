@@ -235,7 +235,7 @@ namespace sortforortho.Models
             return (180 / Math.PI) * radians;
         }
 
-        public List<GeoLocation> GetListOfCoordinates(GeoLocation point1, int imageHeight, int imageWidth, float sensorWidth, float altitude, float focal, float flightYawAngle)
+        public List<GeoLocation> GetCoordinateList(GeoLocation point1, int imageHeight, int imageWidth, float sensorWidth, float altitude, float focal, float flightYawAngle)
         {
             List<GeoLocation> list = new List<GeoLocation>();
             list.Add(GetLatLong(point1.Latitude, point1.Longitude, GetDistanceToCornersInMeters(imageHeight, imageWidth, GetGsd(sensorWidth, altitude, focal, imageWidth)), GetUpperLeftBearing(GetAngleB(imageWidth, imageHeight), flightYawAngle)));

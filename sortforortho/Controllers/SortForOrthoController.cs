@@ -3,15 +3,16 @@ using MetadataExtractor.Formats.Exif;
 using MetadataExtractor.Formats.Xmp;
 using sortforortho.Models;
 using sortforortho.Views;
+using OSGeo.GDAL;
+using OSGeo.OGR;
+using OSGeo.OSR;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace sortforortho.Controllers
 {
@@ -19,6 +20,7 @@ namespace sortforortho.Controllers
     {
 
         private SortForOrthoView _view;
+        private DataCreator dc = new DataCreator();
 
         public SortForOrthoController(SortForOrthoView view)
         {
@@ -32,6 +34,7 @@ namespace sortforortho.Controllers
             bool searchRecursive;
             string[] filters;
             string[] filePaths;
+            List<Image> imageList = new List<Image>();
 
             try
             {
@@ -45,21 +48,24 @@ namespace sortforortho.Controllers
                 _view.ShowResult(filePaths);
                 Console.Read();
 
-
-                List<Image> imageList = new List<Image>();
-
                 foreach (string filePath in filePaths)
                 {
                     imageList.Add(CreateImage(filePath, sensorWidth));
                 }
-
+               
                 Console.WriteLine("Imagelist created!");
+
+
+                
                 Console.Read();
             }
             catch
             {
                 _view.ConfigError();
             }
+
+            dc.CreateShapeFile(imageList);
+
         }
 
         private string[] GetFilePathsFrom(string searchFolder, string[] filters, bool isRecursive)
@@ -142,7 +148,7 @@ namespace sortforortho.Controllers
             img.ImageHeight = imageHeight;
             img.ImageWidth = imageWidth;
             img.PhotoTaken = photoTaken;
-            img.CornerCoordinates = img.GetListOfCoordinates(centerPoint, imageHeight, imageWidth, sensorWidth, altitude, focalLength, flightYawDegree);
+            img.CornerCoordinates = img.GetCoordinateList(centerPoint, imageHeight, imageWidth, sensorWidth, altitude, focalLength, flightYawDegree);
             
             return img;
         }
