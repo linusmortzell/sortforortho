@@ -124,6 +124,17 @@ namespace sortforortho.Models
                 string wkt = "POLYGON(( " + point1lon + " " + point1lat + ", " + point2lon + " " + point2lat + ", " + point3lon + " " + point3lat + ", " + point4lon + " " + point4lat + ", " + point1lon + " " + point1lat + " ))";
                 Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, wgs84);
 
+                CoordinateTransformation transform = Osr.CreateCoordinateTransformation(wgs84, sweref99);
+                double[] arr = { img.CornerCoordinates[0].Longitude, img.CornerCoordinates[0].Latitude };
+                transform.TransformPoint(arr);
+
+                SpatialReference rotation = new SpatialReference("");
+                rotation.ImportFromProj4("-s_srs EPSG:3006 -t_srs EPSG:3006 ")
+
+                Console.WriteLine(arr);
+
+                geom.Transform()
+
                 geom.TransformTo(sweref99);
 
 
