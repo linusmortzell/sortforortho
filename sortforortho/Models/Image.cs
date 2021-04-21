@@ -11,6 +11,7 @@ namespace sortforortho.Models
     {
         private string _path;
         private GeoLocation _centerPoint;
+        private GeoLocation _centerPointSweref;
         private float _altitude;
         private float _sensorWidth;
         private float _focalLength;
@@ -172,6 +173,22 @@ namespace sortforortho.Models
             return new GeoLocation(latitudeResult, longitudeResult);
         }
 
+        public GeoLocation GetNewLatLong(double latitude, double longitude, double distanceInMetres, double bearing)
+        {
+            int earthRadiusInMetres = 6371000;
+            double brngRad = DegreesToRadians(bearing);
+            double latRad = DegreesToRadians(latitude);
+            double lonRad = DegreesToRadians(longitude);
+            double distFrac = distanceInMetres / earthRadiusInMetres;
+
+            double nextLatitudeResult = Math.Asin(Math.Sin(latRad) * Math.Cos(distFrac) + Math.Cos(latRad) * Math.Sin(distFrac) * Math.Cos(brngRad));
+            double nextLongitudeResult = (Math.Atan2(Math.Sin(brngRad) * Math.Sin(distFrac) * Math.Cos(latitude), Math.Cos(distFrac) - Math.Sin(latitude) * Math.Sin(nextLatitudeResult)));
+
+            return new GeoLocation(RadiansToDegrees(nextLatitudeResult), longitude + RadiansToDegrees(nextLongitudeResult));
+        }
+
+        
+
         public double GetAngleB(int imageWidth, int imageHeight)
         {
             return 180 - 90 - (Math.Atan(Convert.ToDouble(imageHeight) / Convert.ToDouble(imageWidth)) * 180 / Math.PI);
@@ -187,41 +204,56 @@ namespace sortforortho.Models
             return Math.Sqrt(Math.Pow(Convert.ToDouble(imageHeight / 2), 2) + Math.Pow(Convert.ToDouble(imageWidth / 2), 2)) * gsd;
         }
 
-        public double GetUpperLeftBearing(double bAngle, float flightYawAngle, float gimbalYawAngle)
+        public double GetUpperLeftBearing(double bAngle, float flightYawAngle)
         {
             double angle = 0 - bAngle + flightYawAngle;
             if (angle >= 360)
             {
                 return angle - 360;
+            } else if (angle < 0)
+            {
+                return angle + 360;
             }
             else return angle;
         }
-        public double GetUpperRightBearing(double bAngle, float flightYawAngle, float gimbalYawAngle)
+        public double GetUpperRightBearing(double bAngle, float flightYawAngle)
         {
-            double angle = 0 + bAngle + flightYawAngle + gimbalYawAngle;
+            double angle = 0 + bAngle + flightYawAngle;
             if (angle >= 360)
             {
                 return angle - 360;
+            }
+            else if (angle < 0)
+            {
+                return angle + 360;
             }
             else return angle;
         }
 
-        public double GetLowerLeftBearing(double bAngle, float flightYawAngle, float gimbalYawAngle)
+        public double GetLowerLeftBearing(double bAngle, float flightYawAngle)
         {
-            double angle = 180 + bAngle + flightYawAngle + gimbalYawAngle;
+            double angle = 180 + bAngle + flightYawAngle;
             if (angle >= 360)
             {
                 return angle - 360;
             }
+            else if (angle < 0)
+            {
+                return angle + 360;
+            }
             else return angle;
         }
 
-        public double GetLowerRightBearing(double bAngle, float flightYawAngle, float gimbalYawAngle)
+        public double GetLowerRightBearing(double bAngle, float flightYawAngle)
         {
-            double angle = 180 - bAngle + flightYawAngle + gimbalYawAngle;
+            double angle = 180 - bAngle + flightYawAngle;
             if (angle >= 360)
             {
                 return angle - 360;
+            }
+            else if (angle < 0)
+            {
+                return angle + 360;
             }
             else return angle;
         }
@@ -241,11 +273,19 @@ namespace sortforortho.Models
             double angleB = GetAngleB(imageWidth, imageHeight);
             float gsd = GetGsd(sensorWidth, altitude, focal, imageWidth);
             double distance = GetDistanceToCornersInMeters(imageHeight, imageWidth, gsd);
+
+            double upperLeftBearing = GetUpperLeftBearing(angleB, flightYawAngle);
+            double upperRightBearing = GetUpperRightBearing(angleB, flightYawAngle);
+            double lowerRightBearing = GetLowerRightBearing(angleB, flightYawAngle);
+            double lowerLeftBearing = GetLowerLeftBearing(angleB, flightYawAngle);
+
             List<GeoLocation> list = new List<GeoLocation>();
-            list.Add(GetLatLong(point1.Latitude, point1.Longitude, distance, GetUpperLeftBearing(angleB, flightYawAngle, gimbalYawAngle)));
-            list.Add(GetLatLong(point1.Latitude, point1.Longitude, distance, GetUpperRightBearing(angleB, flightYawAngle, gimbalYawAngle)));
-            list.Add(GetLatLong(point1.Latitude, point1.Longitude, distance, GetLowerRightBearing(angleB, flightYawAngle, gimbalYawAngle)));
-            list.Add(GetLatLong(point1.Latitude, point1.Longitude, distance, GetLowerLeftBearing(angleB, flightYawAngle, gimbalYawAngle)));
+
+            list.Add(GetNewLatLong(point1.Latitude, point1.Longitude, distance, upperLeftBearing));
+            list.Add(GetNewLatLong(point1.Latitude, point1.Longitude, distance, upperRightBearing));
+            list.Add(GetNewLatLong(point1.Latitude, point1.Longitude, distance, lowerRightBearing));
+            list.Add(GetNewLatLong(point1.Latitude, point1.Longitude, distance, lowerLeftBearing));
+
             return list;
         }
     }

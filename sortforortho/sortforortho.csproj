@@ -69,6 +69,7 @@
     <Compile Include="Models\CreateData.cs" />
     <Compile Include="Models\DataCreator.cs" />
     <Compile Include="Models\Image.cs" />
+    <Compile Include="Models\PhotoSorter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Views\SortForOrthoView.cs" />

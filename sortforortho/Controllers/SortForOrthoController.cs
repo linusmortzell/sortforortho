@@ -62,7 +62,9 @@ namespace sortforortho.Controllers
             }
 
             dc.CreateShapeFile(imageList);
+            Console.WriteLine("Shapefile created successfully!");
 
+            Console.ReadLine();
         }
 
         private string[] GetFilePathsFrom(string searchFolder, string[] filters, bool isRecursive)

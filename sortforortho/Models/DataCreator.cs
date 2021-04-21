@@ -37,7 +37,11 @@ namespace sortforortho.Models
             //var srs = new SpatialReference(null);
             //srs.SetWellKnownGeogCS("EPSG:3857");
 
-            SpatialReference srs = new SpatialReference(Osr.SRS_WKT_WGS84);
+            SpatialReference wgs84 = new SpatialReference(null);
+            wgs84.ImportFromEPSG(4326);
+
+            SpatialReference sweref99 = new SpatialReference(null);
+            sweref99.ImportFromEPSG(3006);
 
 
             /* -------------------------------------------------------------------- */
@@ -69,7 +73,7 @@ namespace sortforortho.Models
                 }
             }
 
-            layer = ds.CreateLayer(layerName, srs, wkbGeometryType.wkbPolygon, new string[] { });
+            layer = ds.CreateLayer(layerName, sweref99, wkbGeometryType.wkbPolygon, new string[] { });
             if (layer == null)
             {
                 Console.WriteLine("Layer creation failed.");
@@ -117,8 +121,11 @@ namespace sortforortho.Models
                 string point4lat = img.CornerCoordinates[3].Latitude.ToString().Replace(",", ".");
                 string point4lon = img.CornerCoordinates[3].Longitude.ToString().Replace(",", ".");
 
-                string wkt = "POLYGON(( " + point1lon + " " + point1lat + ", " + point2lon + " " + point2lat + ", " + point3lon + " " + point3lat + ", " + point4lon + " " + point4lat + " " + point1lon + " " + point1lat + " ))";
-                Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, srs);
+                string wkt = "POLYGON(( " + point1lon + " " + point1lat + ", " + point2lon + " " + point2lat + ", " + point3lon + " " + point3lat + ", " + point4lon + " " + point4lat + ", " + point1lon + " " + point1lat + " ))";
+                Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, wgs84);
+
+                geom.TransformTo(sweref99);
+
 
                 if (feature.SetGeometry(geom) != 0)
                 {
@@ -132,38 +139,6 @@ namespace sortforortho.Models
                     System.Environment.Exit(-1);
                 }
             }
-            string latitude = imageList[9].CornerCoordinates[0].Latitude.ToString().Replace(",", ".");
-            string longitude = imageList[9].CornerCoordinates[0].Longitude.ToString().Replace(",", ".");
-            Console.WriteLine(latitude);
-            
-
-
-            Console.ReadLine();
-
-            //string temp = "POLYGON (10 54, 30 50, 44 65)";
-            //Geometry geom = Ogr.CreateGeometryFromWkt(ref wkbGeometryType.wkbPolygon, srs);
-
-            //if (feature.SetGeometry(geom) != 0)
-            //{
-            //    Console.WriteLine("Failed add geometry to the feature");
-            //    System.Environment.Exit(-1);
-            //}
-
-            //foreach (Image image in imageList)
-            //{   
-            //    Geometry ring = new Geometry(wkbGeometryType.wkbLinearRing);
-            //    foreach (GeoLocation geo in image.CornerCoordinates)
-            //    {
-            //        ring.AddPoint(Convert.ToDouble(geo.Latitude.ToString().Replace(",", ".")), Convert.ToDouble(geo.Longitude.ToString().Replace(",", ".")), 0);
-            //    }
-            //    geom.AddGeometry(ring);
-            //}
-
-            //if (layer.CreateFeature(feature) != 0)
-            //{
-            //    Console.WriteLine("Failed to create feature in shapefile");
-            //    System.Environment.Exit(-1);
-            //}
 
             ReportLayer(layer);
         }
