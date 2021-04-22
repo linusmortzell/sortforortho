@@ -155,8 +155,8 @@ namespace sortforortho.Controllers
             img.FocalLength = focalLength;
             img.ImageHeight = imageHeight;
             img.ImageWidth = imageWidth;
+            img.GimbalYawDegree = gimbalYawDegree;
             img.PhotoTaken = photoTaken;
-            img.CornerCoordinates = img.GetCoordinateList(centerPoint, imageHeight, imageWidth, sensorWidth, altitude, focalLength, flightYawDegree, gimbalYawDegree);
             
             return img;
         }

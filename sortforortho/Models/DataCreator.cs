@@ -108,34 +108,46 @@ namespace sortforortho.Models
 
             foreach (Image img in imageList)
             {
-                Feature feature = new Feature(layer.GetLayerDefn());            
+                Feature feature = new Feature(layer.GetLayerDefn());
                 feature.SetField("Name", img.Path);
                 feature.SetField("Date", img.PhotoTaken);
 
-                string point1lat = img.CornerCoordinates[0].Latitude.ToString().Replace(",", ".");
-                string point1lon = img.CornerCoordinates[0].Longitude.ToString().Replace(",", ".");
-                string point2lat = img.CornerCoordinates[1].Latitude.ToString().Replace(",", ".");
-                string point2lon = img.CornerCoordinates[1].Longitude.ToString().Replace(",", ".");
-                string point3lat = img.CornerCoordinates[2].Latitude.ToString().Replace(",", ".");
-                string point3lon = img.CornerCoordinates[2].Longitude.ToString().Replace(",", ".");
-                string point4lat = img.CornerCoordinates[3].Latitude.ToString().Replace(",", ".");
-                string point4lon = img.CornerCoordinates[3].Longitude.ToString().Replace(",", ".");
+                CoordinateTransformation transform = Osr.CreateCoordinateTransformation(wgs84, sweref99);
+                double[] transformedPoints = { img.CenterPoint.Longitude, img.CenterPoint.Latitude };
+                transform.TransformPoint(transformedPoints);
+                GeoLocation centerPointSweref = new GeoLocation(transformedPoints[1], transformedPoints[0]);
+
+                img.CornerCoordinates = GetCornerCoordinatesSweref(centerPointSweref, img.ImageHeight, img.ImageWidth, GetGsd(img.SensorWidth, img.Altitude, img.FocalLength, img.ImageWidth));
+
+                List<GeoLocation> rotated = new List<GeoLocation>();
+
+                foreach (GeoLocation point in img.CornerCoordinates)
+                {
+                    GeoLocation geo = Rotate(centerPointSweref, point, img.GimbalYawDegree);
+                    rotated.Add(geo);
+                }
+
+                string point1lat = rotated[0].Latitude.ToString().Replace(",", ".");
+                string point1lon = rotated[0].Longitude.ToString().Replace(",", ".");
+                string point2lat = rotated[1].Latitude.ToString().Replace(",", ".");
+                string point2lon = rotated[1].Longitude.ToString().Replace(",", ".");
+                string point3lat = rotated[2].Latitude.ToString().Replace(",", ".");
+                string point3lon = rotated[2].Longitude.ToString().Replace(",", ".");
+                string point4lat = rotated[3].Latitude.ToString().Replace(",", ".");
+                string point4lon = rotated[3].Longitude.ToString().Replace(",", ".");
 
                 string wkt = "POLYGON(( " + point1lon + " " + point1lat + ", " + point2lon + " " + point2lat + ", " + point3lon + " " + point3lat + ", " + point4lon + " " + point4lat + ", " + point1lon + " " + point1lat + " ))";
-                Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, wgs84);
+                Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, sweref99);
 
-                CoordinateTransformation transform = Osr.CreateCoordinateTransformation(wgs84, sweref99);
-                double[] arr = { img.CornerCoordinates[0].Longitude, img.CornerCoordinates[0].Latitude };
-                transform.TransformPoint(arr);
 
-                SpatialReference rotation = new SpatialReference("");
-                rotation.ImportFromProj4("-s_srs EPSG:3006 -t_srs EPSG:3006 ")
+                // geom.TransformTo(wgs84);
 
-                Console.WriteLine(arr);
+                // SpatialReference rotation = new SpatialReference("");
+                // rotation.ImportFromProj4("-s_srs EPSG:3006 -t_srs EPSG:3006 ")
 
-                geom.Transform()
+                // Console.WriteLine(arr);
 
-                geom.TransformTo(sweref99);
+                // geom.TransformTo(sweref99);
 
 
                 if (feature.SetGeometry(geom) != 0)
@@ -240,6 +252,42 @@ namespace sortforortho.Models
             Console.WriteLine("  " + geom_wkt);
 
             Console.WriteLine("");
+        }
+        public float GetGsd(float sensorWidth, float altitude, float focalLength, int imageWidth)
+        {
+            return (float)(sensorWidth * altitude) / (focalLength * imageWidth);
+        }
+        public List<GeoLocation> GetCornerCoordinatesSweref(GeoLocation centerPointInSweref, int imageHeight, int imageWidth, float gsd)
+        {
+            List<GeoLocation> cornerCoordinates = new List<GeoLocation>();
+            GeoLocation upperLeftCorner = new GeoLocation(centerPointInSweref.Latitude + (imageHeight / 2) * gsd, centerPointInSweref.Longitude - (imageWidth / 2) * gsd);
+            GeoLocation upperRightCorner = new GeoLocation(centerPointInSweref.Latitude + (imageHeight / 2) * gsd, centerPointInSweref.Longitude + (imageWidth / 2) * gsd);
+            GeoLocation loweLeftCorner = new GeoLocation(centerPointInSweref.Latitude - (imageHeight / 2) * gsd, centerPointInSweref.Longitude + (imageWidth / 2) * gsd);
+            GeoLocation lowerRightCorner = new GeoLocation(centerPointInSweref.Latitude - (imageHeight / 2) * gsd, centerPointInSweref.Longitude - (imageWidth / 2) * gsd);
+
+            cornerCoordinates.Add(upperLeftCorner);
+            cornerCoordinates.Add(upperRightCorner);
+            cornerCoordinates.Add(loweLeftCorner);
+            cornerCoordinates.Add(lowerRightCorner);
+            return cornerCoordinates;
+        }
+
+        private GeoLocation Rotate(GeoLocation center, GeoLocation cornerPoint, double angle)
+        {
+            double angleInRadians = DegreesToRadians(angle);
+            double dLongitude = center.Longitude + Math.Cos(angleInRadians) * (cornerPoint.Longitude - center.Longitude) - Math.Sin(angleInRadians) * (cornerPoint.Latitude - center.Latitude);
+            double dLatitude = center.Latitude + Math.Sin(angleInRadians) * (cornerPoint.Longitude - center.Longitude) + Math.Cos(angleInRadians) * (cornerPoint.Latitude - center.Latitude);
+            return new GeoLocation(dLatitude, dLongitude);
+        }
+
+        public double DegreesToRadians(double angle)
+        {
+            return (Math.PI / 180) * angle;
+        }
+
+        public double RadiansToDegrees(double radians)
+        {
+            return (180 / Math.PI) * radians;
         }
     }
 }
