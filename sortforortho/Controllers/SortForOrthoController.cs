@@ -28,6 +28,7 @@ namespace sortforortho.Controllers
         {
             string path;
             float sensorWidth;
+            float overlapPercentage = 50;
             bool searchRecursive;
             string[] filters;
             string[] filePaths;
@@ -38,32 +39,31 @@ namespace sortforortho.Controllers
                 path = ConfigurationManager.AppSettings.Get("pathToFiles");
 
                 sensorWidth = float.Parse(ConfigurationManager.AppSettings.Get("sensorWidth"));
+                overlapPercentage = float.Parse(ConfigurationManager.AppSettings.Get("overlapPercentage"));
+                Console.WriteLine(overlapPercentage);
                 searchRecursive = bool.Parse(ConfigurationManager.AppSettings.Get("searchRecursive"));
                 string filtersString = ConfigurationManager.AppSettings.Get("filter");
                 filters = filtersString.Split(',');
                 filePaths = GetFilePathsFrom(@path, filters, searchRecursive);
                 _view.ShowResult(filePaths);
-                Console.Read();
 
                 foreach (string filePath in filePaths)
                 {
                     imageList.Add(CreateImage(filePath, sensorWidth));
                 }
-               
-                Console.WriteLine("Imagelist created!");
 
-
-                
-                Console.Read();
+                _view.ImageListCreated();
             }
             catch
             {
                 _view.ConfigError();
             }
 
-            dc.CreateShapeFile(imageList);
-            Console.WriteLine("Shapefile created successfully!");
-
+            dc.CreateShapeFile(imageList, overlapPercentage);
+            _view.ShapeFileCreated();
+            
+            // Sorting sort = new Sorting();
+            // sort.SortByIntersection();
             Console.ReadLine();
         }
 

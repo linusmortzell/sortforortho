@@ -12,14 +12,13 @@ namespace sortforortho.Models
 {
     class DataCreator
     {
-        public void CreateShapeFile(List<Image> imageList)
+        public void CreateShapeFile(List<Image> imageList, float overlapPercentage)
         {
             /* -------------------------------------------------------------------- */
             /*      Register format(s).                                             */
             /* -------------------------------------------------------------------- */
             GdalConfiguration.ConfigureGdal();
             GdalConfiguration.ConfigureOgr();
-
 
 
             /* -------------------------------------------------------------------- */
@@ -34,9 +33,6 @@ namespace sortforortho.Models
 
 
             // Set spatial reference
-            //var srs = new SpatialReference(null);
-            //srs.SetWellKnownGeogCS("EPSG:3857");
-
             SpatialReference wgs84 = new SpatialReference(null);
             wgs84.ImportFromEPSG(4326);
 
@@ -53,6 +49,7 @@ namespace sortforortho.Models
                 Console.WriteLine("Can't create the datasource.");
                 System.Environment.Exit(-1);
             }
+
 
             /* -------------------------------------------------------------------- */
             /*      Creating the layer                                              */
@@ -80,6 +77,7 @@ namespace sortforortho.Models
                 System.Environment.Exit(-1);
             }
 
+
             /* -------------------------------------------------------------------- */
             /*      Adding attribute fields                                         */
             /* -------------------------------------------------------------------- */
@@ -102,6 +100,14 @@ namespace sortforortho.Models
             }
 
 
+            fdefn = new FieldDefn("Altitude", FieldType.OFTString);
+            if (layer.CreateField(fdefn, 1) != 0)
+            {
+                Console.WriteLine("Creating Altitude field failed.");
+                System.Environment.Exit(-1);
+            }
+
+
             /* -------------------------------------------------------------------- */
             /*      Adding features                                                 */
             /* -------------------------------------------------------------------- */
@@ -111,6 +117,7 @@ namespace sortforortho.Models
                 Feature feature = new Feature(layer.GetLayerDefn());
                 feature.SetField("Name", img.Path);
                 feature.SetField("Date", img.PhotoTaken);
+                feature.SetField("Altitude", img.Altitude);
 
                 CoordinateTransformation transform = Osr.CreateCoordinateTransformation(wgs84, sweref99);
                 double[] transformedPoints = { img.CenterPoint.Longitude, img.CenterPoint.Latitude };
@@ -163,8 +170,119 @@ namespace sortforortho.Models
                 }
             }
 
+            List<List<Feature>> list = SortImages(layer, overlapPercentage);
+            Console.WriteLine("Antal ortofoton (med minimum överlapp " + overlapPercentage + "%) att skapa är: " + list.Count());
             ReportLayer(layer);
         }
+
+        public List<List<Feature>> SortImages (Layer layer, float overlapPercentage)
+        {
+
+            List<List<Feature>> sorted = new List<List<Feature>>();
+            
+            // Create a list of all features
+            List<Feature> featureList = new List<Feature>();
+
+            // Make sure to read from the first feature
+            layer.ResetReading();
+
+            for (int j = 0; j < layer.GetFeatureCount(0); j++)
+            {
+                featureList.Add(layer.GetNextFeature());
+            }
+
+            foreach (Feature f in featureList)
+            {
+                Console.WriteLine(f.GetFieldAsString(0));
+            }
+
+            List<Feature> tempList = new List<Feature>();
+            Geometry union = null;
+
+            while (featureList.Count() > 0)
+            {
+                int i = 0;
+                while (i < featureList.Count())
+                {
+                    Feature feat1 = featureList[i];
+                    Geometry geom1 = feat1.GetGeometryRef();
+                    i++;
+                    Console.WriteLine("Bearbetar: " + feat1.GetFieldAsString(0));
+
+                    if (union == null)
+                    {
+                        tempList.Add(feat1);
+                        featureList.Remove(feat1);
+                        union = geom1;
+                        i = 0;
+                        Console.WriteLine("Börjar på ny lista: " + feat1.GetFieldAsString(0));
+                    }                        
+                    else if (geom1.Intersect(union))
+                    {
+                        Geometry intersect = geom1.Intersection(union);
+                        double intersectedAreaInPercentate = (intersect.GetArea() / geom1.GetArea()) * 100;
+                        if (intersectedAreaInPercentate >= overlapPercentage)
+                        {
+                            tempList.Add(feat1);
+                            featureList.Remove(feat1);
+                            union = union.Union(geom1);
+                            i = 0;
+                            Console.WriteLine("La till i ny lista: " + feat1.GetFieldAsString(0));
+                        }
+                    } 
+                    
+                    if (i == featureList.Count())
+                    {
+                        sorted.Add(tempList);
+                        tempList = new List<Feature>();
+                        union = null;
+                        i = 0;
+                        Console.WriteLine("Ingen av kvarvarande överlappade, avslutar lista.");
+                    }
+                }
+            }
+
+
+            //for (int j = 0; j < featureList.Count - 1; j++)
+            //{
+            //    Geometry geom1;
+            //    if (aggr == null)
+            //    {
+            //        feature1 = layer.GetNextFeature();
+            //        geom1 = feature1.GetGeometryRef();
+            //    }
+            //    else geom1 = aggr;
+
+            //    feature2 = layer.GetNextFeature();
+            //    Geometry geom2 = feature2.GetGeometryRef();
+
+
+            //    if (geom1.Intersect(geom2))
+            //    {
+            //        Geometry intersect = geom1.Intersection(geom2);
+            //        double intersectedArea = (intersect.GetArea() / geom2.GetArea()) * 100;
+            //        if (intersectedArea >= percentageOverlap)
+            //        {
+            //            Console.WriteLine("geom1Area: " + geom1.GetArea());
+            //            aggr = geom1.Union(geom2);
+            //            Console.WriteLine("aggrArea: " + aggr.GetArea());
+            //            if (list.Count() < 2)
+            //            {
+            //                list.Add(feature1.GetFieldAsString(0));
+            //            }
+            //            list.Add(feature2.GetFieldAsString(0));
+            //        }
+            //    }
+
+            //    foreach (String s in list)
+            //    {
+            //        Console.WriteLine(s);
+            //    }
+            //}
+
+            return sorted;
+        }
+
 
         public static void ReportLayer(Layer layer)
         {

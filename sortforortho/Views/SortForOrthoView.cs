@@ -31,5 +31,21 @@ namespace sortforortho.Views
         {
             Console.WriteLine("Error parsing " + error + ".");
         }
+
+        public void ImageListCreated()
+        {
+            Console.WriteLine("Imagelist created!");
+        }
+
+        public void ShapeFileCreated()
+        {
+            Console.WriteLine("Shapefile created successfully!");
+        }
+
+        public void CreateShapeFileFailed(Exception e)
+        {
+            Console.WriteLine("Error when creating shapefile!");
+            Console.WriteLine("Exception: " + e);
+        }
     }
 }
