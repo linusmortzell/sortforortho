@@ -40,7 +40,6 @@ namespace sortforortho.Controllers
 
                 sensorWidth = float.Parse(ConfigurationManager.AppSettings.Get("sensorWidth"));
                 overlapPercentage = float.Parse(ConfigurationManager.AppSettings.Get("overlapPercentage"));
-                Console.WriteLine(overlapPercentage);
                 searchRecursive = bool.Parse(ConfigurationManager.AppSettings.Get("searchRecursive"));
                 string filtersString = ConfigurationManager.AppSettings.Get("filter");
                 filters = filtersString.Split(',');
@@ -49,7 +48,7 @@ namespace sortforortho.Controllers
 
                 foreach (string filePath in filePaths)
                 {
-                    imageList.Add(CreateImage(filePath, sensorWidth));
+                    imageList.Add(CreateImage(filePath, sensorWidth));    
                 }
 
                 _view.ImageListCreated();
@@ -155,7 +154,7 @@ namespace sortforortho.Controllers
             img.FocalLength = focalLength;
             img.ImageHeight = imageHeight;
             img.ImageWidth = imageWidth;
-            img.GimbalYawDegree = gimbalYawDegree;
+            img.GimbalYawDegree = flightYawDegree;
             img.PhotoTaken = photoTaken;
             
             return img;

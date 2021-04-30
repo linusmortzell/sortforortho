@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace sortforortho.Models
 {
@@ -147,16 +148,6 @@ namespace sortforortho.Models
                 Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, sweref99);
 
 
-                // geom.TransformTo(wgs84);
-
-                // SpatialReference rotation = new SpatialReference("");
-                // rotation.ImportFromProj4("-s_srs EPSG:3006 -t_srs EPSG:3006 ")
-
-                // Console.WriteLine(arr);
-
-                // geom.TransformTo(sweref99);
-
-
                 if (feature.SetGeometry(geom) != 0)
                 {
                     Console.WriteLine("Failed add geometry to the feature");
@@ -171,7 +162,8 @@ namespace sortforortho.Models
             }
 
             List<List<Feature>> list = SortImages(layer, overlapPercentage);
-            Console.WriteLine("Antal ortofoton (med minimum överlapp " + overlapPercentage + "%) att skapa är: " + list.Count());
+            Console.WriteLine("Number of orthophotos (with a minimum overlap: " + overlapPercentage + "%) to create is: " + list.Count());
+            Console.Read();
             ReportLayer(layer);
         }
 
@@ -207,7 +199,21 @@ namespace sortforortho.Models
                     Feature feat1 = featureList[i];
                     Geometry geom1 = feat1.GetGeometryRef();
                     i++;
-                    Console.WriteLine("Bearbetar: " + feat1.GetFieldAsString(0));
+                    Console.WriteLine("Working with: " + feat1.GetFieldAsString(0));
+                    float tempListAltitude = 0.0f;
+                    float feat1Altitude = 0.0f;
+                    if (tempList.Count() > 0) {
+                        if (!float.TryParse(tempList[0].GetFieldAsString(2), NumberStyles.Any, CultureInfo.InvariantCulture, out tempListAltitude))
+                        {
+                            Console.WriteLine("Error getting feature altitude");
+                        }
+
+                        if (!float.TryParse(feat1.GetFieldAsString(2), NumberStyles.Any, CultureInfo.InvariantCulture, out feat1Altitude))
+                        {
+                            Console.WriteLine("Error getting feature altitude");
+                        }
+                    }
+
 
                     if (union == null)
                     {
@@ -215,9 +221,11 @@ namespace sortforortho.Models
                         featureList.Remove(feat1);
                         union = geom1;
                         i = 0;
-                        Console.WriteLine("Börjar på ny lista: " + feat1.GetFieldAsString(0));
-                    }                        
-                    else if (geom1.Intersect(union))
+                        Console.WriteLine("Starting new list.");
+                    }
+
+                    // Check for intersect and that it's < 10m difference in altitude between images.
+                    else if (geom1.Intersect(union) && !(feat1Altitude < (tempListAltitude - 15)) && !(feat1Altitude > (tempListAltitude + 15))) 
                     {
                         Geometry intersect = geom1.Intersection(union);
                         double intersectedAreaInPercentate = (intersect.GetArea() / geom1.GetArea()) * 100;
@@ -227,7 +235,7 @@ namespace sortforortho.Models
                             featureList.Remove(feat1);
                             union = union.Union(geom1);
                             i = 0;
-                            Console.WriteLine("La till i ny lista: " + feat1.GetFieldAsString(0));
+                            Console.WriteLine("Added to list.");
                         }
                     } 
                     
@@ -237,48 +245,10 @@ namespace sortforortho.Models
                         tempList = new List<Feature>();
                         union = null;
                         i = 0;
-                        Console.WriteLine("Ingen av kvarvarande överlappade, avslutar lista.");
+                        Console.WriteLine("None of the remaining images overlaps, finishing list.");
                     }
                 }
             }
-
-
-            //for (int j = 0; j < featureList.Count - 1; j++)
-            //{
-            //    Geometry geom1;
-            //    if (aggr == null)
-            //    {
-            //        feature1 = layer.GetNextFeature();
-            //        geom1 = feature1.GetGeometryRef();
-            //    }
-            //    else geom1 = aggr;
-
-            //    feature2 = layer.GetNextFeature();
-            //    Geometry geom2 = feature2.GetGeometryRef();
-
-
-            //    if (geom1.Intersect(geom2))
-            //    {
-            //        Geometry intersect = geom1.Intersection(geom2);
-            //        double intersectedArea = (intersect.GetArea() / geom2.GetArea()) * 100;
-            //        if (intersectedArea >= percentageOverlap)
-            //        {
-            //            Console.WriteLine("geom1Area: " + geom1.GetArea());
-            //            aggr = geom1.Union(geom2);
-            //            Console.WriteLine("aggrArea: " + aggr.GetArea());
-            //            if (list.Count() < 2)
-            //            {
-            //                list.Add(feature1.GetFieldAsString(0));
-            //            }
-            //            list.Add(feature2.GetFieldAsString(0));
-            //        }
-            //    }
-
-            //    foreach (String s in list)
-            //    {
-            //        Console.WriteLine(s);
-            //    }
-            //}
 
             return sorted;
         }

@@ -39,13 +39,18 @@ namespace sortforortho.Views
 
         public void ShapeFileCreated()
         {
-            Console.WriteLine("Shapefile created successfully!");
+            Console.WriteLine("Shapefile successfully created!");
         }
 
         public void CreateShapeFileFailed(Exception e)
         {
             Console.WriteLine("Error when creating shapefile!");
             Console.WriteLine("Exception: " + e);
+        }
+
+        public void IgnoreImageForGimbalPitch()
+        {
+            Console.WriteLine("The drones gimbal pitch were under 80 degrees. Image ignored.");
         }
     }
 }
