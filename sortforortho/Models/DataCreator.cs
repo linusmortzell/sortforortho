@@ -13,7 +13,7 @@ namespace sortforortho.Models
 {
     class DataCreator
     {
-        public void CreateShapeFile(List<Image> imageList, float overlapPercentage)
+        public void CreateShapeFile(List<Image> imageList, float overlapPercentage, int maxSecondsBetweenImages)
         {
             /* -------------------------------------------------------------------- */
             /*      Register format(s).                                             */
@@ -93,7 +93,7 @@ namespace sortforortho.Models
                 System.Environment.Exit(-1);
             }
 
-            fdefn = new FieldDefn("Date", FieldType.OFTString);
+            fdefn = new FieldDefn("DateTime", FieldType.OFTString);
             if (layer.CreateField(fdefn, 1) != 0)
             {
                 Console.WriteLine("Creating Date field failed.");
@@ -117,7 +117,7 @@ namespace sortforortho.Models
             {
                 Feature feature = new Feature(layer.GetLayerDefn());
                 feature.SetField("Name", img.Path);
-                feature.SetField("Date", img.PhotoTaken);
+                feature.SetField("DateTime", img.CreateDate);
                 feature.SetField("Altitude", img.Altitude);
 
                 CoordinateTransformation transform = Osr.CreateCoordinateTransformation(wgs84, sweref99);
@@ -161,13 +161,13 @@ namespace sortforortho.Models
                 }
             }
 
-            List<List<Feature>> list = SortImages(layer, overlapPercentage);
+            List<List<Feature>> list = SortImages(layer, overlapPercentage, maxSecondsBetweenImages);
             Console.WriteLine("Number of orthophotos (with a minimum overlap: " + overlapPercentage + "%) to create is: " + list.Count());
             Console.Read();
             ReportLayer(layer);
         }
 
-        public List<List<Feature>> SortImages (Layer layer, float overlapPercentage)
+        private List<List<Feature>> SortImages (Layer layer, float overlapPercentage, int maxSecondsBetweenImages)
         {
 
             List<List<Feature>> sorted = new List<List<Feature>>();
@@ -189,6 +189,7 @@ namespace sortforortho.Models
             }
 
             List<Feature> tempList = new List<Feature>();
+            List<DateTime> batchImagesCreateDates = new List<DateTime>();
             Geometry union = null;
 
             while (featureList.Count() > 0)
@@ -200,8 +201,10 @@ namespace sortforortho.Models
                     Geometry geom1 = feat1.GetGeometryRef();
                     i++;
                     Console.WriteLine("Working with: " + feat1.GetFieldAsString(0));
+
                     float tempListAltitude = 0.0f;
                     float feat1Altitude = 0.0f;
+                    
                     if (tempList.Count() > 0) {
                         if (!float.TryParse(tempList[0].GetFieldAsString(2), NumberStyles.Any, CultureInfo.InvariantCulture, out tempListAltitude))
                         {
@@ -214,10 +217,13 @@ namespace sortforortho.Models
                         }
                     }
 
+                    DateTime feat1CreateDate = ConvertStringToDateTime(feat1.GetFieldAsString(1));
+                    bool timeMatch = CheckIfTimeMatch(batchImagesCreateDates, feat1CreateDate, maxSecondsBetweenImages);
 
                     if (union == null)
                     {
                         tempList.Add(feat1);
+                        batchImagesCreateDates.Add(feat1CreateDate);
                         featureList.Remove(feat1);
                         union = geom1;
                         i = 0;
@@ -225,13 +231,15 @@ namespace sortforortho.Models
                     }
 
                     // Check for intersect and that it's < 10m difference in altitude between images.
-                    else if (geom1.Intersect(union) && !(feat1Altitude < (tempListAltitude - 15)) && !(feat1Altitude > (tempListAltitude + 15))) 
+                    else if (geom1.Intersect(union) && !(feat1Altitude < (tempListAltitude - 15)) && !(feat1Altitude > (tempListAltitude + 15)) && timeMatch) 
                     {
                         Geometry intersect = geom1.Intersection(union);
                         double intersectedAreaInPercentate = (intersect.GetArea() / geom1.GetArea()) * 100;
                         if (intersectedAreaInPercentate >= overlapPercentage)
                         {
                             tempList.Add(feat1);
+                            Console.WriteLine(feat1CreateDate);
+                            batchImagesCreateDates.Add(feat1CreateDate);
                             featureList.Remove(feat1);
                             union = union.Union(geom1);
                             i = 0;
@@ -243,6 +251,7 @@ namespace sortforortho.Models
                     {
                         sorted.Add(tempList);
                         tempList = new List<Feature>();
+                        batchImagesCreateDates = new List<DateTime>();
                         union = null;
                         i = 0;
                         Console.WriteLine("None of the remaining images overlaps, finishing list.");
@@ -368,14 +377,46 @@ namespace sortforortho.Models
             return new GeoLocation(dLatitude, dLongitude);
         }
 
-        public double DegreesToRadians(double angle)
+        private double DegreesToRadians(double angle)
         {
             return (Math.PI / 180) * angle;
         }
 
-        public double RadiansToDegrees(double radians)
+        private double RadiansToDegrees(double radians)
         {
             return (180 / Math.PI) * radians;
+        }
+
+        private DateTime ConvertStringToDateTime(string dateString)
+        {
+
+            try
+            {
+                DateTime photoTaken = DateTime.ParseExact(dateString, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture);
+                return photoTaken;
+            }
+            catch
+            {
+                Console.WriteLine("Error parsing create date, can't sort image by date / time");
+                return new DateTime();
+            }  
+        }
+
+        private bool CheckIfTimeMatch(List<DateTime> batchImageCreateDates, DateTime feat1CreateDate, int maxSecondsBetweenImages)
+        {
+            foreach (DateTime createDate in batchImageCreateDates)
+            {
+                if (feat1CreateDate > (createDate.AddSeconds(Convert.ToDouble(maxSecondsBetweenImages))) || feat1CreateDate < (createDate.AddSeconds(-Convert.ToDouble(maxSecondsBetweenImages))))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private bool CheckIfAltitudeMatch(List<Feature> list, int maxAltitudeDifference)
+        {
+            return true;
         }
     }
 }

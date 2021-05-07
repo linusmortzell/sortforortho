@@ -29,6 +29,7 @@ namespace sortforortho.Controllers
             string path;
             float sensorWidth;
             float overlapPercentage = 50;
+            int maxSecondsBetweenImages = 0;
             bool searchRecursive;
             string[] filters;
             string[] filePaths;
@@ -41,6 +42,12 @@ namespace sortforortho.Controllers
                 sensorWidth = float.Parse(ConfigurationManager.AppSettings.Get("sensorWidth"));
                 overlapPercentage = float.Parse(ConfigurationManager.AppSettings.Get("overlapPercentage"));
                 searchRecursive = bool.Parse(ConfigurationManager.AppSettings.Get("searchRecursive"));
+
+                if (!Int32.TryParse(ConfigurationManager.AppSettings.Get("maxSecondsBetweenImages"), out maxSecondsBetweenImages))
+                {
+                    _view.ParsingError("max seconds between images, cannot sort image by time");
+                }
+
                 string filtersString = ConfigurationManager.AppSettings.Get("filter");
                 filters = filtersString.Split(',');
                 filePaths = GetFilePathsFrom(@path, filters, searchRecursive);
@@ -58,7 +65,7 @@ namespace sortforortho.Controllers
                 _view.ConfigError();
             }
 
-            dc.CreateShapeFile(imageList, overlapPercentage);
+            dc.CreateShapeFile(imageList, overlapPercentage, maxSecondsBetweenImages);
             _view.ShapeFileCreated();
             
             // Sorting sort = new Sorting();
@@ -90,8 +97,7 @@ namespace sortforortho.Controllers
 
             // Get info from exif-directory
             ExifSubIfdDirectory subIfdDirectory = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
-            string dtStr = subIfdDirectory?.GetDescription(ExifDirectoryBase.TagDateTimeOriginal);
-            string photoTaken = dtStr.Remove(4, 1).Insert(4, "-").Remove(7, 1).Insert(7, "-");
+            string createDate = subIfdDirectory?.GetDescription(ExifDirectoryBase.TagDateTimeOriginal);
 
             // Get ImageSize
             int imageWidth;
@@ -154,8 +160,8 @@ namespace sortforortho.Controllers
             img.FocalLength = focalLength;
             img.ImageHeight = imageHeight;
             img.ImageWidth = imageWidth;
-            img.GimbalYawDegree = flightYawDegree;
-            img.PhotoTaken = photoTaken;
+            img.GimbalYawDegree = gimbalYawDegree;
+            img.CreateDate = createDate;
             
             return img;
         }

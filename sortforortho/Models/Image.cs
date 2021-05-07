@@ -17,7 +17,7 @@ namespace sortforortho.Models
         private float _gimbalYawDegree;
         private int _imageWidth;
         private int _imageHeight;
-        private string _photoTaken;
+        private string _createDate;
         private List<GeoLocation> _cornerCoordinates;
         public string Path
         {
@@ -115,15 +115,15 @@ namespace sortforortho.Models
             }
         }
 
-        public string PhotoTaken
+        public string CreateDate
         {
             get
             {
-                return _photoTaken;
+                return _createDate;
             }
             set
             {
-                _photoTaken = value;
+                _createDate = value;
             }
         }
 
@@ -141,7 +141,7 @@ namespace sortforortho.Models
         }
 
 
-        public Image(string path, GeoLocation centerPoint, float altitude, float sensorWidth, float focalLength, int imageWidth, float gimbalYawDegree, string photoTaken)
+        public Image(string path, GeoLocation centerPoint, float altitude, float sensorWidth, float focalLength, int imageWidth, float gimbalYawDegree, string createDate)
         {
             this._path = path;
             this._centerPoint = centerPoint;
@@ -151,7 +151,7 @@ namespace sortforortho.Models
             this._imageWidth = imageWidth;
             this._gimbalYawDegree = gimbalYawDegree;
             this._imageHeight = ImageHeight;
-            this._photoTaken = photoTaken;
+            this._createDate = createDate;
         }
 
         public Image() { }
