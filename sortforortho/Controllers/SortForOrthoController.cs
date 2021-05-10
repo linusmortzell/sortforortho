@@ -17,16 +17,21 @@ namespace sortforortho.Controllers
     {
 
         private SortForOrthoView _view;
-        private DataCreator dc = new DataCreator();
+        private PhotoSorter _ps;
+        private XMLReader _xmlReader;
 
-        public SortForOrthoController(SortForOrthoView view)
+        public SortForOrthoController(SortForOrthoView view, PhotoSorter ps, XMLReader xmlReader)
         {
             this._view = view;
+            this._ps = ps;
+            this._xmlReader = xmlReader;
         }
 
         public void StartApp()
         {
-            string path;
+            string pathToXml = "./config.xml";
+            string pathToShapeFile = "./ImageShape";
+            string pathToFiles;
             float sensorWidth;
             float overlapPercentage = 50;
             int maxSecondsBetweenImages = 0;
@@ -37,20 +42,38 @@ namespace sortforortho.Controllers
 
             try
             {
-                path = ConfigurationManager.AppSettings.Get("pathToFiles");
+                pathToFiles = _xmlReader.ReadValueFromXML(pathToXml, "pathToFiles");
 
-                sensorWidth = float.Parse(ConfigurationManager.AppSettings.Get("sensorWidth"));
-                overlapPercentage = float.Parse(ConfigurationManager.AppSettings.Get("overlapPercentage"));
-                searchRecursive = bool.Parse(ConfigurationManager.AppSettings.Get("searchRecursive"));
-
-                if (!Int32.TryParse(ConfigurationManager.AppSettings.Get("maxSecondsBetweenImages"), out maxSecondsBetweenImages))
+                if (!float.TryParse(_xmlReader.ReadValueFromXML(pathToXml, "sensorWidth"), out sensorWidth))
                 {
-                    _view.ParsingError("max seconds between images, cannot sort image by time");
+                    _view.ParsingError(1);
+                    System.Environment.Exit(-1);
                 }
 
-                string filtersString = ConfigurationManager.AppSettings.Get("filter");
+                if (!float.TryParse(_xmlReader.ReadValueFromXML(pathToXml, "overlapPercentage"), out overlapPercentage))
+                {
+                    _view.ParsingError(2);
+                    System.Environment.Exit(-1);
+                }
+
+                if (!bool.TryParse(_xmlReader.ReadValueFromXML(pathToXml, "searchRecursive"), out searchRecursive))
+                {
+                    _view.ParsingError(3);
+                    System.Environment.Exit(-1);
+                }
+
+                if (!Int32.TryParse(_xmlReader.ReadValueFromXML(pathToXml, "maxSecondsBetweenImages"), out maxSecondsBetweenImages))
+                {
+                    _view.ParsingError(4);
+                    System.Environment.Exit(-1);
+                }
+
+
+                string filtersString = _xmlReader.ReadValueFromXML(pathToXml, "filter");
                 filters = filtersString.Split(',');
-                filePaths = GetFilePathsFrom(@path, filters, searchRecursive);
+
+                filePaths = GetFilePathsFrom(@pathToFiles, filters, searchRecursive);
+
                 _view.ShowResult(filePaths);
 
                 foreach (string filePath in filePaths)
@@ -60,16 +83,19 @@ namespace sortforortho.Controllers
 
                 _view.ImageListCreated();
             }
-            catch
+            catch (Exception e)
             {
-                _view.ConfigError();
+                _view.ConfigError(e);
             }
 
-            dc.CreateShapeFile(imageList, overlapPercentage, maxSecondsBetweenImages);
-            _view.ShapeFileCreated();
-            
-            // Sorting sort = new Sorting();
-            // sort.SortByIntersection();
+            List<List<String>> photosInBatches = _ps.SortForOrtho(imageList, overlapPercentage, maxSecondsBetweenImages, pathToShapeFile);
+
+
+
+            if (_view.ShowSortOptions())
+            {
+                _ps.PutFilesInDirectories(_xmlReader.ReadValueFromXML(pathToXml, "pathToSortedBatches"), photosInBatches);
+            }
             Console.ReadLine();
         }
 
@@ -103,19 +129,19 @@ namespace sortforortho.Controllers
             int imageWidth;
             if (!Int32.TryParse(Regex.Match(subIfdDirectory?.GetDescription(ExifDirectoryBase.TagExifImageWidth), @"\d+").Value, out imageWidth))
             {
-                _view.ParsingError("image width");
+                _view.ParsingError(5);
             }
 
             int imageHeight;
             if (!Int32.TryParse(Regex.Match(subIfdDirectory?.GetDescription(ExifDirectoryBase.TagExifImageHeight), @"\d+").Value, out imageHeight))
             {
-                _view.ParsingError("image height");
+                _view.ParsingError(6);
             }
 
             // Get focal length
             float focalLength = 0.0f;
             if (!float.TryParse(Regex.Match(subIfdDirectory?.GetDescription(ExifDirectoryBase.TagFocalLength), @"\d+,\d").Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out focalLength))
-                _view.ParsingError("focal length");
+                _view.ParsingError(7);
 
             /**
              * Get info from xmp-directory
@@ -132,7 +158,7 @@ namespace sortforortho.Controllers
                 {
                     if (!float.TryParse(property.Value.Replace("+", ""), NumberStyles.Any, CultureInfo.InvariantCulture, out altitude))
                     {
-                        _view.ParsingError("altitude");
+                        _view.ParsingError(8);
                     }
                 }
 
@@ -140,7 +166,7 @@ namespace sortforortho.Controllers
                 {
                     if (!float.TryParse(property.Value.Replace("+", ""), NumberStyles.Any, CultureInfo.InvariantCulture, out flightYawDegree))
                     {
-                        _view.ParsingError("flight yaw degree");
+                        _view.ParsingError(9);
                     }
                 }
 
@@ -148,7 +174,7 @@ namespace sortforortho.Controllers
                 {
                     if (!float.TryParse(property.Value.Replace("+", ""), NumberStyles.Any, CultureInfo.InvariantCulture, out gimbalYawDegree))
                     {
-                        _view.ParsingError("gimbal yaw degree");
+                        _view.ParsingError(10);
                     }
                 }
             }
@@ -165,5 +191,7 @@ namespace sortforortho.Controllers
             
             return img;
         }
+
+
     }
 }

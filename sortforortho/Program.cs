@@ -12,7 +12,9 @@ namespace sortforortho
         static void Main(string[] args)
         {
             Views.SortForOrthoView view = new Views.SortForOrthoView();
-            Controllers.SortForOrthoController controller = new Controllers.SortForOrthoController(view);
+            Models.PhotoSorter ps = new Models.PhotoSorter(view);
+            Models.XMLReader xmlReader = new Models.XMLReader(view);
+            Controllers.SortForOrthoController controller = new Controllers.SortForOrthoController(view, ps, xmlReader);
             controller.StartApp();
         }
     }

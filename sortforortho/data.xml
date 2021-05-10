@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<settings>
+	<!--Sökväg till rootmappen för alla bilder-->
+	<pathToFiles>C:\Users\linus\LNU\2dv50e\images</pathToFiles>
+
+	<!--Anger vars dom färdigsorterade mapparna ska hamna-->
+	<pathToSortedBatches>.\SortedDirectories</pathToSortedBatches>
+	
+	<!--Sensorvidden på kameran i drönaren, ange storleken i millimeter, exempel: M2P "13,2" M2 "6,3"-->
+	<sensorWidth>13,2</sensorWidth>
+
+	<!--Värde i procent över hur mycket överlapp bilder ska ha för att tillhöra samma ortofoto-->
+	<overlapPercentage>50</overlapPercentage>
+
+	<!--Anger om sökning av bilder även ska ske i undermappar, ange true för rekursiv sökning, false för endast rootmapp.-->
+	<searchRecursive>true</searchRecursive>
+
+
+	<!--Anger max antal sekunder som är tillåtet mellan bilder inom en och samma batch, anges i hela sekunder-->
+	<maxSecondsBetweenImages>4000</maxSecondsBetweenImages>
+
+	<!--Anger vilka filtyper som ska hanteras av programmet (exempel: "jpg,jpeg"-->
+	<filter>jpg,jpeg</filter>
+</settings>
