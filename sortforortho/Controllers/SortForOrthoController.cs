@@ -75,7 +75,7 @@ namespace sortforortho.Controllers
 
             if (_view.ShowSortOptions())
             {
-                _ps.PutFilesInDirectories(ConfigurationManager.AppSettings.Get("pathToSortedBatches"), photosInBatches);
+                _ps.PutFilesInDirectories(config.PathToSortedBatches, photosInBatches);
             }
             Console.ReadLine();
         }

@@ -140,7 +140,6 @@ namespace sortforortho.Models
             }
         }
 
-
         public Image(string path, GeoLocation centerPoint, float altitude, float sensorWidth, float focalLength, int imageWidth, float gimbalYawDegree, string createDate)
         {
             this._path = path;

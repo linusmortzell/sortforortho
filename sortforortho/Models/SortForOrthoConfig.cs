@@ -27,6 +27,17 @@ namespace sortforortho.Models
                 _pathToFiles = value;
             }
         }
+        public string PathToSortedBatches
+        {
+            get
+            {
+                return _pathToSortedBatches;
+            }
+            set
+            {
+                _pathToSortedBatches = value;
+            }
+        }
 
         public float SensorWidth
         {
