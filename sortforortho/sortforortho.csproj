@@ -65,9 +65,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\SortForOrthoController.cs" />
+    <Compile Include="Models\ConfigReader.cs" />
     <Compile Include="Models\Image.cs" />
+    <Compile Include="Models\MetaDataReader.cs" />
+    <Compile Include="Models\OrthoPhotoCreator.cs" />
     <Compile Include="Models\PhotoSorter.cs" />
-    <Compile Include="Models\XMLReader.cs" />
+    <Compile Include="Models\SortForOrthoConfig.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Views\SortForOrthoView.cs" />
@@ -85,9 +88,6 @@
     <PackageReference Include="MetadataExtractor">
       <Version>2.4.3</Version>
     </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="data.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

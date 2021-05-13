@@ -18,14 +18,20 @@ namespace sortforortho.Views
             }
 
             Console.WriteLine("Found " + count + " images");
-            Console.Read();
+            Console.ReadLine();
         }
 
         public void ConfigError(Exception e)
         {
             Console.WriteLine("Error occurred, check configuration!");
             Console.WriteLine("Exception: " + e);
-            Console.Read();
+            Console.ReadLine();
+        }
+
+        public void NoImages()
+        {
+            Console.WriteLine("No images in the configured root folder, program will exit.");
+            Console.ReadLine();
         }
 
         public void ParsingError(int caseSwitch)
@@ -63,15 +69,37 @@ namespace sortforortho.Views
                 case 10:
                     configType = "gimbal yaw degree";
                     break;
-
+                case 11:
+                    configType = "feature (from list) altitude";
+                    break;
+                case 12:
+                    configType = "feature altitude";
+                    break;
             }
             Console.WriteLine("Error parsing " + configType + ".");
-            Console.Read();
+            Console.ReadLine();
         }
 
-        public void ImageListCreated()
+        public void NewList()
+        {
+            Console.WriteLine("Starting new list.");
+        }
+
+        public void AddedToList()
+        {
+            Console.WriteLine("Added to list.");
+        }
+
+        public void NoImageOverLap()
+        {
+            Console.WriteLine("None of the remaining images overlaps, finishing list.");
+        }
+
+        public void ImageListCreated(int ignoredImages)
         {
             Console.WriteLine("Imagelist created!");
+            Console.WriteLine("Ignored images: " + ignoredImages);
+            Console.ReadLine();
         }
 
         public void ShapeFileCreated()
@@ -89,6 +117,11 @@ namespace sortforortho.Views
         {
             Console.WriteLine("Error while getting data from XML, program will not work properly");
             Console.WriteLine("Exception: " + e);
+        }
+
+        public void ShowWorkingWithFile(string filePath)
+        {
+            Console.WriteLine("Working with: " + filePath);
         }
 
         public void CantGetDriver()
@@ -140,6 +173,11 @@ namespace sortforortho.Views
         public void FeatureInShapeFileFailed()
         {
             Console.WriteLine("Failed to create feature in shapefile");
+        }
+
+        public void ImageMetaDataNotComplete(string filePath)
+        {
+            Console.WriteLine("Image metadata not complete, ignoring image: " + filePath);
         }
 
         public bool ShowSortOptions()

@@ -98,18 +98,10 @@ namespace sortforortho.Models
                 System.Environment.Exit(-1);
             }
 
-            fdefn = new FieldDefn("DateTime", FieldType.OFTString);
+            fdefn = new FieldDefn("CreateDate", FieldType.OFTString);
             if (layer.CreateField(fdefn, 1) != 0)
             {
                 _view.DateFieldFailed();
-                System.Environment.Exit(-1);
-            }
-
-
-            fdefn = new FieldDefn("Altitude", FieldType.OFTString);
-            if (layer.CreateField(fdefn, 1) != 0)
-            {
-                _view.AltitudeFieldFailed();
                 System.Environment.Exit(-1);
             }
 
@@ -122,8 +114,7 @@ namespace sortforortho.Models
             {
                 Feature feature = new Feature(layer.GetLayerDefn());
                 feature.SetField("Name", img.Path);
-                feature.SetField("DateTime", img.CreateDate);
-                feature.SetField("Altitude", img.Altitude);
+                feature.SetField("CreateDate", img.CreateDate);
 
                 CoordinateTransformation transform = Osr.CreateCoordinateTransformation(wgs84, sweref99);
                 double[] transformedPoints = { img.CenterPoint.Longitude, img.CenterPoint.Latitude };
@@ -153,6 +144,8 @@ namespace sortforortho.Models
                 Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, sweref99);
 
 
+
+
                 if (feature.SetGeometry(geom) != 0)
                 {
                     _view.AddGeometryFailed();
@@ -169,6 +162,8 @@ namespace sortforortho.Models
             List<List<Feature>> sortedList = SortImages(layer, overlapPercentage, maxSecondsBetweenImages);
 
             ReportLayer(layer);
+
+            CreateShapeFileOfSortedFiles(sortedList, pathToShapeFile);
 
             List<List<String>> batchStringList = GetListOfFilePathBatches(sortedList);
             
@@ -201,11 +196,6 @@ namespace sortforortho.Models
                 featureList.Add(layer.GetNextFeature());
             }
 
-            foreach (Feature f in featureList)
-            {
-                Console.WriteLine(f.GetFieldAsString(0));
-            }
-
             List<Feature> tempList = new List<Feature>();
             List<DateTime> batchImagesCreateDates = new List<DateTime>();
             Geometry union = null;
@@ -218,7 +208,7 @@ namespace sortforortho.Models
                     Feature feat1 = featureList[i];
                     Geometry geom1 = feat1.GetGeometryRef();
                     i++;
-                    Console.WriteLine("Working with: " + feat1.GetFieldAsString(0));
+                    _view.ShowWorkingWithFile(feat1.GetFieldAsString(0));
 
                     float tempListAltitude = 0.0f;
                     float feat1Altitude = 0.0f;
@@ -227,12 +217,12 @@ namespace sortforortho.Models
                     {
                         if (!float.TryParse(tempList[0].GetFieldAsString(2), NumberStyles.Any, CultureInfo.InvariantCulture, out tempListAltitude))
                         {
-                            Console.WriteLine("Error getting feature altitude");
+                            _view.ParsingError(11);
                         }
 
                         if (!float.TryParse(feat1.GetFieldAsString(2), NumberStyles.Any, CultureInfo.InvariantCulture, out feat1Altitude))
                         {
-                            Console.WriteLine("Error getting feature altitude");
+                            _view.ParsingError(12);
                         }
                     }
 
@@ -246,7 +236,7 @@ namespace sortforortho.Models
                         featureList.Remove(feat1);
                         union = geom1;
                         i = 0;
-                        Console.WriteLine("Starting new list.");
+                        _view.NewList();
                     }
 
                     // Check for intersect and timematch.
@@ -257,12 +247,11 @@ namespace sortforortho.Models
                         if (intersectedAreaInPercentate >= overlapPercentage)
                         {
                             tempList.Add(feat1);
-                            Console.WriteLine(feat1CreateDate);
                             batchImagesCreateDates.Add(feat1CreateDate);
                             featureList.Remove(feat1);
                             union = union.Union(geom1);
                             i = 0;
-                            Console.WriteLine("Added to list.");
+                            _view.AddedToList();
                         }
                     }
 
@@ -273,7 +262,7 @@ namespace sortforortho.Models
                         batchImagesCreateDates = new List<DateTime>();
                         union = null;
                         i = 0;
-                        Console.WriteLine("None of the remaining images overlaps, finishing list.");
+                        _view.NoImageOverLap();
                     }
                 }
             }
@@ -464,6 +453,120 @@ namespace sortforortho.Models
                     System.IO.File.Move(@path, directory + "/" + fileName);
                 }
             }
+        }
+
+        public void CreateShapeFileOfSortedFiles(List<List<Feature>> sortedImages, string pathToShapeFile)
+        {
+            /* -------------------------------------------------------------------- */
+            /*      Get driver                                                      */
+            /* -------------------------------------------------------------------- */
+            OSGeo.OGR.Driver drv = Ogr.GetDriverByName("ESRI Shapefile");
+            if (drv == null)
+            {
+                _view.CantGetDriver();
+                System.Environment.Exit(-1);
+            }
+
+            SpatialReference wgs84 = new SpatialReference(null);
+            wgs84.ImportFromEPSG(4326);
+
+            SpatialReference sweref99 = new SpatialReference(null);
+            sweref99.ImportFromEPSG(3006);
+
+
+            /* -------------------------------------------------------------------- */
+            /*      Creating the datasource                                         */
+            /* -------------------------------------------------------------------- */
+            DataSource ds = drv.CreateDataSource(pathToShapeFile, new string[] { });
+            if (drv == null)
+            {
+                _view.CantGetDataSource();
+                System.Environment.Exit(-1);
+            }
+
+
+            /* -------------------------------------------------------------------- */
+            /*      Creating the layer                                              */
+            /* -------------------------------------------------------------------- */
+
+            string layerName = "sortedImages";
+            Layer layer;
+
+            for (int i = 0; i < ds.GetLayerCount(); i++)
+            {
+                layer = ds.GetLayerByIndex(i);
+                if (layer != null && layer.GetLayerDefn().GetName() == layerName)
+                {
+                    _view.LayerExisted();
+                    ds.DeleteLayer(i);
+                    break;
+                }
+            }
+
+            layer = ds.CreateLayer(layerName, sweref99, wkbGeometryType.wkbPolygon, new string[] { });
+            if (layer == null)
+            {
+                _view.LayerCreationFailed();
+                System.Environment.Exit(-1);
+            }
+
+            /* -------------------------------------------------------------------- */
+            /*      Adding attribute fields                                         */
+            /* -------------------------------------------------------------------- */
+
+            FieldDefn fdefn = new FieldDefn("Batch", FieldType.OFTString);
+
+            fdefn.SetWidth(32);
+
+            if (layer.CreateField(fdefn, 1) != 0)
+            {
+                _view.FieldCreationFailed();
+                System.Environment.Exit(-1);
+            }
+            
+            fdefn = new FieldDefn("Name", FieldType.OFTString);
+
+            if (layer.CreateField(fdefn, 1) != 0)
+            {
+                _view.FieldCreationFailed();
+                System.Environment.Exit(-1);
+            }
+
+            fdefn = new FieldDefn("DateTime", FieldType.OFTString);
+            if (layer.CreateField(fdefn, 1) != 0)
+            {
+                _view.DateFieldFailed();
+                System.Environment.Exit(-1);
+            }
+
+            /* -------------------------------------------------------------------- */
+            /*      Adding features                                                 */
+            /* -------------------------------------------------------------------- */
+
+            for (int i = 0; i < sortedImages.Count; i++)
+            {
+                foreach (Feature f in sortedImages[i])
+                {
+                    Feature feature = new Feature(layer.GetLayerDefn());
+                    feature.SetField("Batch", "Batch" + (i + 1));
+                    feature.SetField("Name", f.GetFieldAsString(0));
+                    feature.SetField("DateTime", f.GetFieldAsString(1));
+
+                    Geometry geom = f.GetGeometryRef();
+
+                    if (feature.SetGeometry(geom) != 0)
+                        {
+                            _view.AddGeometryFailed();
+                            System.Environment.Exit(-1);
+                        }
+                        if (layer.CreateFeature(feature) != 0)
+                        {
+                            _view.FeatureInShapeFileFailed();
+                            System.Environment.Exit(-1);
+                        }
+                }
+            }
+            ReportLayer(layer);
         }
     }
 }
