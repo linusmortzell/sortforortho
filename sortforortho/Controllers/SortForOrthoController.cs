@@ -47,6 +47,8 @@ namespace sortforortho.Controllers
 
 
             filePaths = GetFilePathsFrom(@config.PathToFiles, config.Filters, config.SearchRecursive);
+            int ignoredImages = 0;
+
             if (filePaths.Length <= 0)
             {
                 _view.NoImages();
@@ -54,7 +56,6 @@ namespace sortforortho.Controllers
             } else
             {
                 _view.ShowResult(filePaths);
-                int ignoredImages = 0;
                 foreach (string filePath in filePaths)
                 {
                     try
@@ -68,16 +69,15 @@ namespace sortforortho.Controllers
                         ignoredImages++;
                     }
                 }
-                _view.ImageListCreated(ignoredImages);
             }
 
-            List<List<String>> photosInBatches = _ps.SortForOrtho(imageList, config.OverlapPercentage, config.MaxSecondsBetweenImages, pathToShapeFile); ;
+            List<List<String>> photosInBatches = _ps.SortForOrtho(imageList, config.OverlapPercentage, config.MaxSecondsBetweenImages, pathToShapeFile, ignoredImages); ;
 
             if (_view.ShowSortOptions())
             {
                 _ps.PutFilesInDirectories(config.PathToSortedBatches, photosInBatches);
             }
-            Console.ReadLine();
+            else System.Environment.Exit(-1);
         }
 
         private string[] GetFilePathsFrom(string searchFolder, string[] filters, bool isRecursive)

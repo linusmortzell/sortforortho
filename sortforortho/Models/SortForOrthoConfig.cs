@@ -10,11 +10,13 @@ namespace sortforortho.Models
     {
         private string _pathToFiles;
         private string _pathToSortedBatches;
+        private string _pathToShapeFile;
         private float _sensorWidth;
         private float _overlapPercentage;
         private int _maxSecondsBetweenImages;
         private bool _searchRecursive;
         private string[] _filters;
+        private string _nodeOdmUrl;
 
         public string PathToFiles
         {
@@ -36,6 +38,18 @@ namespace sortforortho.Models
             set
             {
                 _pathToSortedBatches = value;
+            }
+        }
+
+        public string PathToShapeFile
+        {
+            get
+            {
+                return _pathToShapeFile;
+            }
+            set
+            {
+                _pathToShapeFile = value;
             }
         }
 
@@ -99,15 +113,29 @@ namespace sortforortho.Models
             }
         }
 
-        public SortForOrthoConfig(string pathToFiles, string pathToSortedBatches, float sensorWidth, float overlapPercentage, int maxSecondsBetweenImages, bool searchRecursive, string[] filters)
+        public string NodeOdmUrl
+        {
+            get
+            {
+                return _nodeOdmUrl;
+            }
+            set
+            {
+                _nodeOdmUrl = value;
+            }
+        }
+
+        public SortForOrthoConfig(string pathToFiles, string pathToSortedBatches, string pathToShapeFile, float sensorWidth, float overlapPercentage, int maxSecondsBetweenImages, bool searchRecursive, string[] filters, string nodeOdmUrl)
         {
             this._pathToFiles = pathToFiles;
             this._pathToSortedBatches = pathToSortedBatches;
+            this._pathToShapeFile = pathToShapeFile;
             this._sensorWidth = sensorWidth;
             this._overlapPercentage = overlapPercentage;
             this._maxSecondsBetweenImages = maxSecondsBetweenImages;
             this._searchRecursive = searchRecursive;
             this._filters = filters;
+            this._nodeOdmUrl = nodeOdmUrl;
         }
 
         public SortForOrthoConfig()

@@ -13,14 +13,18 @@ namespace sortforortho.Models
         {
             string pathToFiles;
             string pathToSortedBatches;
+            string pathToShapeFile;
             float sensorWidth;
             float overlapPercentage;
             int maxSecondsBetweenImages;
             bool searchRecursive;
             string[] filters;
+            string odmUrl;
 
             pathToFiles = ConfigurationManager.AppSettings.Get("pathToFiles");
             pathToSortedBatches = ConfigurationManager.AppSettings.Get("pathToSortedBatches");
+            pathToShapeFile = ConfigurationManager.AppSettings.Get("pathToShapeFile");
+            odmUrl = ConfigurationManager.AppSettings.Get("nodeOdmUrl");
 
             if (!float.TryParse(ConfigurationManager.AppSettings.Get("sensorWidth"), out sensorWidth))
             {
@@ -49,7 +53,7 @@ namespace sortforortho.Models
             }
             else throw new FormatException("filter");
 
-            return new SortForOrthoConfig(pathToFiles, pathToSortedBatches, sensorWidth, overlapPercentage, maxSecondsBetweenImages, searchRecursive, filters);
+            return new SortForOrthoConfig(pathToFiles, pathToSortedBatches, pathToShapeFile, sensorWidth, overlapPercentage, maxSecondsBetweenImages, searchRecursive, filters, odmUrl);
         }
     }
 }

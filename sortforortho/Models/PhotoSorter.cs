@@ -4,6 +4,7 @@ using OSGeo.OSR;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace sortforortho.Models
         {
             this._view = view;
         }
-        public List<List<String>> SortForOrtho(List<Image> imageList, float overlapPercentage, int maxSecondsBetweenImages, string pathToShapeFile)
+        public List<List<String>> SortForOrtho(List<Image> imageList, float overlapPercentage, int maxSecondsBetweenImages, string pathToShapeFile, int ignoredImages)
         {
             /* -------------------------------------------------------------------- */
             /*      Register format(s).                                             */
@@ -161,8 +162,6 @@ namespace sortforortho.Models
 
             List<List<Feature>> sortedList = SortImages(layer, overlapPercentage, maxSecondsBetweenImages);
 
-            ReportLayer(layer);
-
             CreateShapeFileOfSortedFiles(sortedList, pathToShapeFile);
 
             List<List<String>> batchStringList = GetListOfFilePathBatches(sortedList);
@@ -175,7 +174,7 @@ namespace sortforortho.Models
                     numberOfLoners++;
                 }
             }
-            _view.ShowNumberOfOrthoPhotos(overlapPercentage, sortedList.Count(), numberOfLoners);
+            _view.ShowNumberOfOrthoPhotos(overlapPercentage, sortedList.Count(), numberOfLoners, ignoredImages);
 
             return batchStringList;
         }
@@ -191,7 +190,8 @@ namespace sortforortho.Models
             // Make sure to read from the first feature
             layer.ResetReading();
 
-            for (int j = 0; j < layer.GetFeatureCount(0); j++)
+            // Place all features in the list of features.
+            for (int i = 0; i < layer.GetFeatureCount(0); i++)
             {
                 featureList.Add(layer.GetNextFeature());
             }
@@ -210,25 +210,10 @@ namespace sortforortho.Models
                     i++;
                     _view.ShowWorkingWithFile(feat1.GetFieldAsString(0));
 
-                    float tempListAltitude = 0.0f;
-                    float feat1Altitude = 0.0f;
-
-                    if (tempList.Count() > 0)
-                    {
-                        if (!float.TryParse(tempList[0].GetFieldAsString(2), NumberStyles.Any, CultureInfo.InvariantCulture, out tempListAltitude))
-                        {
-                            _view.ParsingError(11);
-                        }
-
-                        if (!float.TryParse(feat1.GetFieldAsString(2), NumberStyles.Any, CultureInfo.InvariantCulture, out feat1Altitude))
-                        {
-                            _view.ParsingError(12);
-                        }
-                    }
-
                     DateTime feat1CreateDate = ConvertStringToDateTime(feat1.GetFieldAsString(1));
                     bool timeMatch = CheckIfTimeMatch(batchImagesCreateDates, feat1CreateDate, maxSecondsBetweenImages);
 
+                    // If union is null a new batch is created.
                     if (union == null)
                     {
                         tempList.Add(feat1);
@@ -236,7 +221,6 @@ namespace sortforortho.Models
                         featureList.Remove(feat1);
                         union = geom1;
                         i = 0;
-                        _view.NewList();
                     }
 
                     // Check for intersect and timematch.
@@ -251,113 +235,21 @@ namespace sortforortho.Models
                             featureList.Remove(feat1);
                             union = union.Union(geom1);
                             i = 0;
-                            _view.AddedToList();
                         }
                     }
-
-                    if (i == featureList.Count())
-                    {
-                        sorted.Add(tempList);
-                        tempList = new List<Feature>();
-                        batchImagesCreateDates = new List<DateTime>();
-                        union = null;
-                        i = 0;
-                        _view.NoImageOverLap();
-                    }
                 }
-            }
 
+                // If no more geometrys does overlap the union or match in time 
+                // the batch are being saved in the list of sorted batches.
+                sorted.Add(tempList);
+                tempList = new List<Feature>();
+                batchImagesCreateDates = new List<DateTime>();
+                union = null;
+                i = 0;
+            }
             return sorted;
         }
 
-
-        public static void ReportLayer(Layer layer)
-        {
-            FeatureDefn def = layer.GetLayerDefn();
-            Console.WriteLine("Layer name: " + def.GetName());
-            Console.WriteLine("Feature Count: " + layer.GetFeatureCount(1));
-            Envelope ext = new Envelope();
-            layer.GetExtent(ext, 1);
-            Console.WriteLine("Extent: " + ext.MinX + "," + ext.MaxX + "," +
-                ext.MinY + "," + ext.MaxY);
-
-            /* -------------------------------------------------------------------- */
-            /*      Reading the spatial reference                                   */
-            /* -------------------------------------------------------------------- */
-            OSGeo.OSR.SpatialReference sr = layer.GetSpatialRef();
-            string srs_wkt;
-            if (sr != null)
-            {
-                sr.ExportToPrettyWkt(out srs_wkt, 1);
-            }
-            else
-                srs_wkt = "(unknown)";
-
-
-            Console.WriteLine("Layer SRS WKT: " + srs_wkt);
-
-            /* -------------------------------------------------------------------- */
-            /*      Reading the fields                                              */
-            /* -------------------------------------------------------------------- */
-            Console.WriteLine("Field definition:");
-            for (int iAttr = 0; iAttr < def.GetFieldCount(); iAttr++)
-            {
-                FieldDefn fdef = def.GetFieldDefn(iAttr);
-
-                Console.WriteLine(fdef.GetNameRef() + ": " +
-                    fdef.GetFieldTypeName(fdef.GetFieldType()) + " (" +
-                    fdef.GetWidth() + "." +
-                    fdef.GetPrecision() + ")");
-            }
-
-            /* -------------------------------------------------------------------- */
-            /*      Reading the shapes                                              */
-            /* -------------------------------------------------------------------- */
-            Console.WriteLine("");
-            Feature feat;
-            while ((feat = layer.GetNextFeature()) != null)
-            {
-                ReportFeature(feat, def);
-                feat.Dispose();
-            }
-        }
-
-        public static void ReportFeature(Feature feat, FeatureDefn def)
-        {
-            Console.WriteLine("Feature(" + def.GetName() + "): " + feat.GetFID());
-            for (int iField = 0; iField < feat.GetFieldCount(); iField++)
-            {
-                FieldDefn fdef = def.GetFieldDefn(iField);
-
-                Console.Write(fdef.GetNameRef() + " (" +
-                    fdef.GetFieldTypeName(fdef.GetFieldType()) + ") = ");
-
-                if (feat.IsFieldSet(iField))
-                    Console.WriteLine(feat.GetFieldAsString(iField));
-                else
-                    Console.WriteLine("(null)");
-
-            }
-
-            if (feat.GetStyleString() != null)
-                Console.WriteLine("  Style = " + feat.GetStyleString());
-
-            Geometry geom = feat.GetGeometryRef();
-            if (geom != null)
-                Console.WriteLine("  " + geom.GetGeometryName() +
-                    "(" + geom.GetGeometryType() + ")");
-
-            Envelope env = new Envelope();
-            geom.GetEnvelope(env);
-            Console.WriteLine("   ENVELOPE: " + env.MinX + "," + env.MaxX + "," +
-                env.MinY + "," + env.MaxY);
-
-            string geom_wkt;
-            geom.ExportToWkt(out geom_wkt);
-            Console.WriteLine("  " + geom_wkt);
-
-            Console.WriteLine("");
-        }
         public float GetGsd(float sensorWidth, float altitude, float focalLength, int imageWidth)
         {
             return (float)(sensorWidth * altitude) / (focalLength * imageWidth);
@@ -439,9 +331,11 @@ namespace sortforortho.Models
 
         public void PutFilesInDirectories(string pathToSortedBatches, List<List<String>> sortedList)
         {
+            // searches the current directory
+            int fCount = System.IO.Directory.GetDirectories(pathToSortedBatches).Length;
             for (int i = 0; i < sortedList.Count; i++)
             {
-                string directory = pathToSortedBatches + "/Batch" + (i + 1);
+                string directory = pathToSortedBatches + "/Batch" + (fCount + i + 1);
                 System.IO.Directory.CreateDirectory(directory);
                 foreach (string path in sortedList[i])
                 {
@@ -450,7 +344,7 @@ namespace sortforortho.Models
                     string fileName = pathSplit[pathSplit.Length - 1];
 
                     // Move file
-                    System.IO.File.Move(@path, directory + "/" + fileName);
+                    System.IO.File.Copy(@path, directory + "/" + fileName, true);
                 }
             }
         }
@@ -489,7 +383,7 @@ namespace sortforortho.Models
             /*      Creating the layer                                              */
             /* -------------------------------------------------------------------- */
 
-            string layerName = "sortedImages";
+            string layerName = "images";
             Layer layer;
 
             for (int i = 0; i < ds.GetLayerCount(); i++)
@@ -497,7 +391,7 @@ namespace sortforortho.Models
                 layer = ds.GetLayerByIndex(i);
                 if (layer != null && layer.GetLayerDefn().GetName() == layerName)
                 {
-                    _view.LayerExisted();
+                    // _view.LayerExisted();
                     ds.DeleteLayer(i);
                     break;
                 }
@@ -566,7 +460,6 @@ namespace sortforortho.Models
                         }
                 }
             }
-            ReportLayer(layer);
         }
     }
 }

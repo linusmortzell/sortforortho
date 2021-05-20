@@ -95,13 +95,6 @@ namespace sortforortho.Views
             Console.WriteLine("None of the remaining images overlaps, finishing list.");
         }
 
-        public void ImageListCreated(int ignoredImages)
-        {
-            Console.WriteLine("Imagelist created!");
-            Console.WriteLine("Ignored images: " + ignoredImages);
-            Console.ReadLine();
-        }
-
         public void ShapeFileCreated()
         {
             Console.WriteLine("Shapefile successfully created!");
@@ -134,10 +127,11 @@ namespace sortforortho.Views
             Console.WriteLine("Can't create the datasource.");
         }
 
-        public void ShowNumberOfOrthoPhotos(float overlapPercentage, int numberOfOrthophotos, int numberOfLoners)
+        public void ShowNumberOfOrthoPhotos(float overlapPercentage, int numberOfOrthophotos, int numberOfLoners, int ignoredImages)
         {
-            Console.WriteLine("Number of orthophotos (with a minimum overlap: " + overlapPercentage + "%) to create is: " + (numberOfOrthophotos - numberOfLoners));
+            Console.WriteLine("Number of ignored images: " + ignoredImages);
             Console.WriteLine("Number of batches with less than 5 images: " + numberOfLoners);
+            Console.WriteLine("Number of orthophotos (with a minimum overlap: " + overlapPercentage + "%) to create is: " + (numberOfOrthophotos - numberOfLoners));
         }
 
         public void LayerExisted()
@@ -196,12 +190,16 @@ namespace sortforortho.Views
                 }
                 if (ck == ConsoleKey.Escape)
                 {
-                    Console.WriteLine("Did nothing.");
                     return false;
                 }
             }
             while (ck != ConsoleKey.Enter || ck != ConsoleKey.Escape);
             return true;
+        }
+
+        public void CouldNotCreateOrthos(Exception e)
+        {
+            Console.WriteLine("Could not create ortho photos. Exception: " + e);
         }
     }
 }
