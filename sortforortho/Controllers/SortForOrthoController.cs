@@ -56,6 +56,7 @@ namespace sortforortho.Controllers
             } else
             {
                 _view.ShowResult(filePaths);
+                _view.CreatingImageObjects();
                 foreach (string filePath in filePaths)
                 {
                     try
@@ -71,13 +72,29 @@ namespace sortforortho.Controllers
                 }
             }
 
-            List<List<String>> photosInBatches = _ps.SortForOrtho(imageList, config.OverlapPercentage, config.MaxSecondsBetweenImages, pathToShapeFile, ignoredImages); ;
-
-            if (_view.ShowSortOptions())
+            try
             {
-                _ps.PutFilesInDirectories(config.PathToSortedBatches, photosInBatches);
+                List<List<String>> photosInBatches = _ps.SortForOrtho(imageList, config.OverlapPercentage, config.MaxSecondsBetweenImages, pathToShapeFile, ignoredImages);
+                int numberOfLoners = 0;
+                foreach (List<String> batch in photosInBatches)
+                {
+                    if (batch.Count <= 4)
+                    {
+                        numberOfLoners++;
+                    }
+                }
+                _view.ShowNumberOfOrthoPhotos(config.OverlapPercentage, photosInBatches.Count(), numberOfLoners, ignoredImages);
+
+                if (_view.ShowSortOptions())
+                {
+                    _ps.PutFilesInDirectories(config.PathToSortedBatches, photosInBatches);
+                }
+                else System.Environment.Exit(-1);
             }
-            else System.Environment.Exit(-1);
+            catch (Exception e)
+            {
+                _view.ShowErrorWhileSortingImages(e);
+            }
         }
 
         private string[] GetFilePathsFrom(string searchFolder, string[] filters, bool isRecursive)

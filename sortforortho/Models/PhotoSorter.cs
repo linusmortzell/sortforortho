@@ -34,8 +34,7 @@ namespace sortforortho.Models
             OSGeo.OGR.Driver drv = Ogr.GetDriverByName("ESRI Shapefile");
             if (drv == null)
             {
-                _view.CantGetDriver();
-                System.Environment.Exit(-1);
+                throw new Exception("Error getting driver");
             }
 
 
@@ -53,8 +52,7 @@ namespace sortforortho.Models
             DataSource ds = drv.CreateDataSource(pathToShapeFile, new string[] { });
             if (drv == null)
             {
-                _view.CantGetDataSource();
-                System.Environment.Exit(-1);
+                throw new Exception("Error getting datasource");
             }
 
 
@@ -71,7 +69,6 @@ namespace sortforortho.Models
                 layer = ds.GetLayerByIndex(i);
                 if (layer != null && layer.GetLayerDefn().GetName() == layerName)
                 {
-                    _view.LayerExisted();
                     ds.DeleteLayer(i);
                     break;
                 }
@@ -80,8 +77,7 @@ namespace sortforortho.Models
             layer = ds.CreateLayer(layerName, sweref99, wkbGeometryType.wkbPolygon, new string[] { });
             if (layer == null)
             {
-                _view.LayerCreationFailed();
-                System.Environment.Exit(-1);
+                throw new Exception("Layer creation failed");
             }
 
 
@@ -95,15 +91,13 @@ namespace sortforortho.Models
 
             if (layer.CreateField(fdefn, 1) != 0)
             {
-                _view.FieldCreationFailed();
-                System.Environment.Exit(-1);
+                throw new Exception("Namefield creation failed");
             }
 
             fdefn = new FieldDefn("CreateDate", FieldType.OFTString);
             if (layer.CreateField(fdefn, 1) != 0)
             {
-                _view.DateFieldFailed();
-                System.Environment.Exit(-1);
+                throw new Exception("Datefield creation failed");
             }
 
 
@@ -145,18 +139,14 @@ namespace sortforortho.Models
                 Geometry geom = Ogr.CreateGeometryFromWkt(ref wkt, sweref99);
 
 
-
-
                 if (feature.SetGeometry(geom) != 0)
                 {
-                    _view.AddGeometryFailed();
-                    System.Environment.Exit(-1);
+                    throw new Exception("Add geometry to feature failed");
                 }
 
                 if (layer.CreateFeature(feature) != 0)
                 {
-                    _view.FeatureInShapeFileFailed();
-                    System.Environment.Exit(-1);
+                    throw new Exception("Adding feature to shapefile failed");
                 }
             }
 
@@ -165,16 +155,6 @@ namespace sortforortho.Models
             CreateShapeFileOfSortedFiles(sortedList, pathToShapeFile);
 
             List<List<String>> batchStringList = GetListOfFilePathBatches(sortedList);
-            
-            int numberOfLoners = 0;
-            foreach (List<String> batch in batchStringList)
-            {
-                if (batch.Count <= 4)
-                {
-                    numberOfLoners++;
-                }
-            }
-            _view.ShowNumberOfOrthoPhotos(overlapPercentage, sortedList.Count(), numberOfLoners, ignoredImages);
 
             return batchStringList;
         }
@@ -332,7 +312,17 @@ namespace sortforortho.Models
         public void PutFilesInDirectories(string pathToSortedBatches, List<List<String>> sortedList)
         {
             // searches the current directory
-            int fCount = System.IO.Directory.GetDirectories(pathToSortedBatches).Length;
+            int fCount;
+            if (System.IO.Directory.Exists(pathToSortedBatches))
+            {
+                fCount = System.IO.Directory.GetDirectories(pathToSortedBatches).Length;
+            }
+            else
+            {
+                System.IO.Directory.CreateDirectory(pathToSortedBatches);
+                fCount = 0;
+            }
+                
             for (int i = 0; i < sortedList.Count; i++)
             {
                 string directory = pathToSortedBatches + "/Batch" + (fCount + i + 1);
@@ -357,8 +347,7 @@ namespace sortforortho.Models
             OSGeo.OGR.Driver drv = Ogr.GetDriverByName("ESRI Shapefile");
             if (drv == null)
             {
-                _view.CantGetDriver();
-                System.Environment.Exit(-1);
+                throw new Exception("Error getting driver");
             }
 
             SpatialReference wgs84 = new SpatialReference(null);
@@ -374,8 +363,7 @@ namespace sortforortho.Models
             DataSource ds = drv.CreateDataSource(pathToShapeFile, new string[] { });
             if (drv == null)
             {
-                _view.CantGetDataSource();
-                System.Environment.Exit(-1);
+                throw new Exception("Error when creating datasource");
             }
 
 
@@ -400,8 +388,7 @@ namespace sortforortho.Models
             layer = ds.CreateLayer(layerName, sweref99, wkbGeometryType.wkbPolygon, new string[] { });
             if (layer == null)
             {
-                _view.LayerCreationFailed();
-                System.Environment.Exit(-1);
+                throw new Exception("Layercreation failed");
             }
 
             /* -------------------------------------------------------------------- */
@@ -414,23 +401,20 @@ namespace sortforortho.Models
 
             if (layer.CreateField(fdefn, 1) != 0)
             {
-                _view.FieldCreationFailed();
-                System.Environment.Exit(-1);
+                throw new Exception("Batchfield creation failed");
             }
             
             fdefn = new FieldDefn("Name", FieldType.OFTString);
 
             if (layer.CreateField(fdefn, 1) != 0)
             {
-                _view.FieldCreationFailed();
-                System.Environment.Exit(-1);
+                throw new Exception("Namefield creation failed");
             }
 
             fdefn = new FieldDefn("DateTime", FieldType.OFTString);
             if (layer.CreateField(fdefn, 1) != 0)
             {
-                _view.DateFieldFailed();
-                System.Environment.Exit(-1);
+                throw new Exception("DateTimefield creation failed");
             }
 
             /* -------------------------------------------------------------------- */
@@ -449,15 +433,13 @@ namespace sortforortho.Models
                     Geometry geom = f.GetGeometryRef();
 
                     if (feature.SetGeometry(geom) != 0)
-                        {
-                            _view.AddGeometryFailed();
-                            System.Environment.Exit(-1);
-                        }
-                        if (layer.CreateFeature(feature) != 0)
-                        {
-                            _view.FeatureInShapeFileFailed();
-                            System.Environment.Exit(-1);
-                        }
+                    {
+                        throw new Exception("Add geometry failed");
+                    }
+                    if (layer.CreateFeature(feature) != 0)
+                    {
+                        throw new Exception("Adding feature to shapefile failed");
+                    }
                 }
             }
         }

@@ -21,6 +21,11 @@ namespace sortforortho.Views
             Console.ReadLine();
         }
 
+        public void CreatingImageObjects()
+        {
+            Console.WriteLine("Creating image objects");
+        }
+
         public void ConfigError(Exception e)
         {
             Console.WriteLine("Error occurred, check configuration!");
@@ -134,39 +139,12 @@ namespace sortforortho.Views
             Console.WriteLine("Number of orthophotos (with a minimum overlap: " + overlapPercentage + "%) to create is: " + (numberOfOrthophotos - numberOfLoners));
         }
 
-        public void LayerExisted()
+        public void ShowErrorWhileSortingImages(Exception e)
         {
-            Console.WriteLine("Layer already existed. Recreating it.\n");
-        }
-
-        public void LayerCreationFailed()
-        {
-            Console.WriteLine("Layer creation failed.");
-        }
-
-        public void FieldCreationFailed()
-        {
-            Console.WriteLine("Creating fields failed.");
-        }
-
-        public void DateFieldFailed()
-        {
-            Console.WriteLine("Creating Date field failed.");
-        }
-
-        public void AltitudeFieldFailed()
-        {
-            Console.WriteLine("Creating Altitude field failed.");
-        }
-
-        public void AddGeometryFailed()
-        {
-            Console.WriteLine("Failed add geometry to the feature");
-        }
-
-        public void FeatureInShapeFileFailed()
-        {
-            Console.WriteLine("Failed to create feature in shapefile");
+            Console.WriteLine("Error while sorting images: " + e);
+            Console.WriteLine("Exit program");
+            Console.ReadLine();
+            System.Environment.Exit(-1);
         }
 
         public void ImageMetaDataNotComplete(string filePath)
@@ -185,7 +163,7 @@ namespace sortforortho.Views
                 ck = Console.ReadKey(true).Key;
                 if (ck == ConsoleKey.Enter)
                 {
-                    Console.WriteLine("Moving files to directories.");
+                    Console.WriteLine("Moving files to directories. Please wait...");
                     return true;
                 }
                 if (ck == ConsoleKey.Escape)
